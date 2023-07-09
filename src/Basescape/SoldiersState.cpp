@@ -203,6 +203,7 @@ SoldiersState::SoldiersState(Base *base) : _base(base), _origSoldierOrder(*_base
 	PUSH_IN("STR_WOUND_RECOVERY2", woundRecoveryStat);
 	if (_game->getMod()->isManaFeatureEnabled() && !_game->getMod()->getReplenishManaAfterMission())
 	{
+		PUSH_IN("STR_MANA_CURRENT", currentManaStat);
 		PUSH_IN("STR_MANA_MISSING", manaMissingStat);
 	}
 	PUSH_IN("STR_TIME_UNITS", tuStat);

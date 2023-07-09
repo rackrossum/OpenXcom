@@ -160,4 +160,8 @@ int OpenXcom::idleDaysStat(const Game *game, const Soldier *s)
 {
 	return game->getSavedGame()->getSoldierIdleDays(s);
 }
+int OpenXcom::currentManaStat(const Game *game, const Soldier *s)
+{
+	return manaStat(game, s) - manaMissingStat(game, s);
+}
 #undef GET_SOLDIER_STAT_FN

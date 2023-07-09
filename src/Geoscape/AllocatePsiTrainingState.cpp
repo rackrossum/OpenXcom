@@ -136,6 +136,7 @@ AllocatePsiTrainingState::AllocatePsiTrainingState(Base *base) : _sel(0), _base(
 	PUSH_IN("STR_WOUND_RECOVERY2", woundRecoveryStat);
 	if (_game->getMod()->isManaFeatureEnabled() && !_game->getMod()->getReplenishManaAfterMission())
 	{
+		PUSH_IN("STR_MANA_CURRENT", currentManaStat);
 		PUSH_IN("STR_MANA_MISSING", manaMissingStat);
 	}
 
