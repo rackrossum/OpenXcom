@@ -1456,6 +1456,7 @@ void DebriefingState::prepareDebriefing()
 		bu->killedBy(FACTION_HOSTILE); //skip counting as kill
 	}
 
+	const auto battleItems = battle->getItems();
 	// time to care for units.
 	bool psiStrengthEval = (Options::psiStrengthEval && save->isResearched(_game->getMod()->getPsiRequirements()));
 	for (auto* bunit : *battle->getUnits())
@@ -1510,6 +1511,23 @@ void DebriefingState::prepareDebriefing()
 							addItemsToBaseStores(soldier->getReplacedArmor()->getStoreItem()->getType(), base, 1, false);
 						}
 						soldier->setReplacedArmor(0);
+					}
+					else if (soldier->getArmor()
+							 && soldier->getArmor()->getStoreItem())
+					{
+						const auto corpseIt = std::find_if(battleItems->begin(), battleItems->end(),
+															[bunit](BattleItem* item)
+														   { return item && item->getUnit() && item->getUnit() == bunit; });
+
+						if (corpseIt != battleItems->end())
+						{
+							const auto* corpse = *corpseIt;
+							if (success || (aborted && corpse->getTile() && corpse->getTile()->getFloorSpecialTileType() == START_POINT))
+							{
+								addItemsToBaseStores(soldier->getArmor()->getStoreItem()->getType(), base, 1, false);
+								soldier->setArmor(soldier->getRules()->getDefaultArmor());
+							}
+						}
 					}
 					// transformed armor doesn't get recovered
 					soldier->setTransformedArmor(0);
