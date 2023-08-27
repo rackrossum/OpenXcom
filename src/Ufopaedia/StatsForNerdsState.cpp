@@ -1529,11 +1529,11 @@ void StatsForNerdsState::addItemTargets(std::ostringstream& ss, const RuleItem* 
 	resetStream(ss);
 	ss << "{";
 	// FIXME: make translatable one day, when some better default names are suggested
-	if (value->isTargetAllowed(FACTION_PLAYER))
+	if (value->isTargetAllowed(FACTION_PLAYER, FACTION_PLAYER))
 		ss << "friend" << ", ";
-	if (value->isTargetAllowed(FACTION_HOSTILE))
+	if (value->isTargetAllowed(FACTION_HOSTILE, FACTION_PLAYER))
 		ss << "hostile" << ", ";
-	if (value->isTargetAllowed(FACTION_NEUTRAL))
+	if (value->isTargetAllowed(FACTION_NEUTRAL, FACTION_PLAYER))
 		ss << "neutral" << ", ";
 	ss << "}";
 	if (_showIds)
@@ -2823,7 +2823,7 @@ void StatsForNerdsState::initArmorList()
 
 		addSection("{Calculations}", "", _white);
 		addVectorOfIntegers(ss, armorRule->getLoftempsSet(), "loftempsSet");
-		addInteger(ss, armorRule->getPersonalLight(), "personalLight", 15);
+		addInteger(ss, armorRule->getPersonalLight(), "personalLight", -1);
 		addInteger(ss, armorRule->getStandHeight(), "standHeight", -1);
 		addInteger(ss, armorRule->getKneelHeight(), "kneelHeight", -1);
 		addInteger(ss, armorRule->getFloatHeight(), "floatHeight", -1);
