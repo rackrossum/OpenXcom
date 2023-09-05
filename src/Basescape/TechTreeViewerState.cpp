@@ -39,6 +39,7 @@
 #include "../Interface/TextButton.h"
 #include "../Interface/TextList.h"
 #include "../Savegame/SavedGame.h"
+#include "../Ufopaedia/Ufopaedia.h"
 #include <algorithm>
 #include <unordered_set>
 
@@ -328,6 +329,8 @@ void TechTreeViewerState::initLists()
 	_lstLeft->setVisible(true);
 	_lstRight->setVisible(true);
 	_lstFull->setVisible(false);
+	_lstRightRowToUfopediaArcticle.clear();
+	_lstRight->onMouseClick(nullptr, SDL_BUTTON_MIDDLE);
 
 	if (_selectedFlag == TTV_NONE)
 	{
@@ -1360,6 +1363,8 @@ void TechTreeViewerState::initLists()
 		const std::map<const RuleItem*, int> outputs = rule->getProducedItems();
 		if (outputs.size() > 0 || rule->getProducedCraft())
 		{
+			_lstRight->onMouseClick((ActionHandler)&TechTreeViewerState::onTryOpenUfopediaArcticle, SDL_BUTTON_MIDDLE);
+
 			_lstRight->addRow(1, tr("STR_ITEMS_PRODUCED").c_str());
 			_lstRight->setRowColor(row, _blue);
 			_rightTopics.push_back("-");
@@ -1375,8 +1380,10 @@ void TechTreeViewerState::initLists()
 				_lstRight->setRowColor(row, _white);
 				_rightTopics.push_back("-");
 				_rightFlags.push_back(TTV_NONE);
+				_lstRightRowToUfopediaArcticle[row] = rule->getProducedCraft()->getType();
 				++row;
 			}
+
 			for (auto& i : outputs)
 			{
 				std::ostringstream name;
@@ -1388,6 +1395,7 @@ void TechTreeViewerState::initLists()
 				_lstRight->setRowColor(row, _white);
 				_rightTopics.push_back(i.first->getType());
 				_rightFlags.push_back(TTV_ITEMS);
+				_lstRightRowToUfopediaArcticle[row] = i.first->getUfopediaType();
 				++row;
 			}
 		}
@@ -1862,6 +1870,21 @@ void TechTreeViewerState::onSelectLeftTopic(Action *)
 		_selectedTopic = _leftTopics[index];
 		initLists();
 	}
+}
+
+/**
+ * Tries to open ufopedia arcticle for produced items/craft.
+ * @param action Pointer to an action.
+ */
+void TechTreeViewerState::onTryOpenUfopediaArcticle(Action*)
+{
+	if (_selectedFlag != TTV_MANUFACTURING)
+		return;
+
+	int index = _lstRight->getSelectedRow();
+	auto it = _lstRightRowToUfopediaArcticle.find(index);
+	if (it != _lstRightRowToUfopediaArcticle.end())
+		Ufopaedia::openArticle(_game, it->second);
 }
 
 /**
