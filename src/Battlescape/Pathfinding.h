@@ -18,6 +18,7 @@
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <vector>
+#include <optional>
 #include "Position.h"
 #include "PathfindingNode.h"
 #include "../Mod/MapData.h"
@@ -71,6 +72,8 @@ private:
 	bool canFallDown(const Tile *destinationTile) const;
 	/// Determines whether a unit can fall down from this tile.
 	bool canFallDown(const Tile *destinationTile, int size) const;
+	/// Calculates final destination of path if possible
+	std::optional<Position> tryCalculateFinalPosition(Position endPosition, const BattleUnit* unit, BattleActionMove bam, const BattleUnit* missileTarget);
 	std::vector<int> _path;
 public:
 	/// Determines whether the unit is going up a stairs.
