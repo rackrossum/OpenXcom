@@ -442,6 +442,7 @@
     <ClCompile Include="Battlescape\UnitDieBState.cpp" />
     <ClCompile Include="Battlescape\UnitPanicBState.cpp" />
     <ClCompile Include="Battlescape\UnitSprite.cpp" />
+    <ClCompile Include="Battlescape\UnitTeleportingState.cpp" />
     <ClCompile Include="Battlescape\UnitTurnBState.cpp" />
     <ClCompile Include="Battlescape\UnitWalkBState.cpp" />
     <ClCompile Include="Battlescape\Particle.cpp" />
@@ -823,6 +824,7 @@
     <ClInclude Include="Battlescape\UnitDieBState.h" />
     <ClInclude Include="Battlescape\UnitPanicBState.h" />
     <ClInclude Include="Battlescape\UnitSprite.h" />
+    <ClInclude Include="Battlescape\UnitTeleportingState.h" />
     <ClInclude Include="Battlescape\UnitTurnBState.h" />
     <ClInclude Include="Battlescape\UnitWalkBState.h" />
     <ClInclude Include="Battlescape\Particle.h" />

@@ -1395,6 +1395,26 @@ bool BattleUnit::isFloating() const
 }
 
 /**
+ * Teleports unit.
+ */
+void BattleUnit::teleport(Tile* tile, SavedBattleGame* saveBattleGame)
+{
+	/*
+	if (isFloating())
+		_status = STATUS_FLYING;
+	else
+		_status = STATUS_WALKING;
+	*/
+
+	_destination = tile->getPosition();
+	_lastPos = _pos;
+	_pos = _destination;
+
+	setTile(tile, saveBattleGame);
+	_status = STATUS_STANDING;
+}
+
+/**
  * Aim. (shows the right hand sprite and weapon holding)
  * @param aiming true/false
  */

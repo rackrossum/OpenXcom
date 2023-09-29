@@ -25,6 +25,7 @@
 #include "BattleState.h"
 #include "UnitTurnBState.h"
 #include "UnitWalkBState.h"
+#include "UnitTeleportingState.h"
 #include "ProjectileFlyBState.h"
 #include "MeleeAttackBState.h"
 #include "PsiAttackBState.h"
@@ -1929,50 +1930,71 @@ void BattlescapeGame::primaryAction(Position pos)
 				_save->getPathfinding()->removePreview();
 			}
 			_currentAction.target = pos;
-			_save->getPathfinding()->calculate(_currentAction.actor, _currentAction.target, BAM_NORMAL); // precalculate move
 
-			_currentAction.strafe = false;
-			_currentAction.run = false;
-			_currentAction.sneak = false;
-
-			if (isCtrlPressed)
+			if (!_save->isPreview())
 			{
-				if (_save->getPathfinding()->getPath().size() > 1)
+				_save->getPathfinding()->calculate(_currentAction.actor, _currentAction.target, BAM_NORMAL); // precalculate move
+
+				_currentAction.strafe = false;
+				_currentAction.run = false;
+				_currentAction.sneak = false;
+
+				if (isCtrlPressed)
 				{
-					_currentAction.run = _save->getSelectedUnit()->getArmor()->allowsRunning(_save->getSelectedUnit()->isSmallUnit());
+					if (_save->getPathfinding()->getPath().size() > 1)
+					{
+						_currentAction.run = _save->getSelectedUnit()->getArmor()->allowsRunning(_save->getSelectedUnit()->isSmallUnit());
+					}
+					else
+					{
+						_currentAction.strafe = _save->getSelectedUnit()->getArmor()->allowsStrafing(_save->getSelectedUnit()->isSmallUnit());
+					}
 				}
-				else
+				else if (isAltPressed)
 				{
-					_currentAction.strafe = _save->getSelectedUnit()->getArmor()->allowsStrafing(_save->getSelectedUnit()->isSmallUnit());
+					_currentAction.sneak = _save->getSelectedUnit()->getArmor()->allowsSneaking(_save->getSelectedUnit()->isSmallUnit());
+				}
+
+				// recalculate path after setting new move types
+				if (BAM_NORMAL != _currentAction.getMoveType())
+				{
+					_save->getPathfinding()->calculate(_currentAction.actor, _currentAction.target, _currentAction.getMoveType());
+				}
+
+				// if running or shifting, ignore spotted enemies (i.e. don't stop)
+				_currentAction.ignoreSpottedEnemies = (_currentAction.run && Mod::EXTENDED_RUNNING_COST) || isShiftPressed;
+
+				if (bPreviewed && !_save->getPathfinding()->previewPath() && _save->getPathfinding()->getStartDirection() != -1)
+				{
+					_save->getPathfinding()->removePreview();
+					bPreviewed = false;
 				}
 			}
-			else if (isAltPressed)
+			else
 			{
-				_currentAction.sneak = _save->getSelectedUnit()->getArmor()->allowsSneaking(_save->getSelectedUnit()->isSmallUnit());
+				_save->getPathfinding()->calculateTeleportDestination(_currentAction.actor, _currentAction.target, BAM_NORMAL);
+				if (bPreviewed && !_save->getPathfinding()->previewPath())
+				{
+					_save->getPathfinding()->removePreview();
+					bPreviewed = false;
+				}
 			}
-
-			// recalculate path after setting new move types
-			if (BAM_NORMAL != _currentAction.getMoveType())
+				
+			if (!bPreviewed )
 			{
-				_save->getPathfinding()->calculate(_currentAction.actor, _currentAction.target, _currentAction.getMoveType());
-			}
-
-			// if running or shifting, ignore spotted enemies (i.e. don't stop)
-			_currentAction.ignoreSpottedEnemies = (_currentAction.run && Mod::EXTENDED_RUNNING_COST) || isShiftPressed;
-
-			if (bPreviewed && !_save->getPathfinding()->previewPath() && _save->getPathfinding()->getStartDirection() != -1)
-			{
-				_save->getPathfinding()->removePreview();
-				bPreviewed = false;
-			}
-
-			if (!bPreviewed && _save->getPathfinding()->getStartDirection() != -1)
-			{
-				//  -= start walking =-
-				getMap()->setCursorType(CT_NONE);
-				_parentState->getGame()->getCursor()->setVisible(false);
-				statePushBack(new UnitWalkBState(this, _currentAction));
-				playUnitResponseSound(_currentAction.actor, 1); // "start moving" sound
+				if (_save->getPathfinding()->getStartDirection() != -1)
+				{
+					//  -= start walking =-
+					getMap()->setCursorType(CT_NONE);
+					_parentState->getGame()->getCursor()->setVisible(false);
+					statePushBack(new UnitWalkBState(this, _currentAction));
+					playUnitResponseSound(_currentAction.actor, 1); // "start moving" sound
+				}
+				else if (auto tpPos = _save->getPathfinding()->getTeleportDestination(); _save->isPreview() && tpPos)
+				{
+					_currentAction.target = *tpPos;
+					statePushBack(new UnitTeleportingState(this, _currentAction));
+				}
 			}
 		}
 	}

@@ -74,8 +74,11 @@ private:
 	bool canFallDown(const Tile *destinationTile, int size) const;
 	/// Calculates final destination of path if possible
 	std::optional<Position> tryCalculateFinalPosition(Position endPosition, const BattleUnit* unit, BattleActionMove bam, const BattleUnit* missileTarget);
+
 	std::vector<int> _path;
-public:
+	std::optional<Position> _teleportDestination;
+
+  public:
 	/// Determines whether the unit is going up a stairs.
 	bool isOnStairs(Position startPosition, Position endPosition) const;
 	/// Determines whether or not movement between start tile and end tile is possible in the direction.
@@ -207,6 +210,11 @@ public:
 	/// Calculates the shortest path.
 	void calculate(BattleUnit *unit, Position endPosition, BattleActionMove bam, const BattleUnit *missileTarget = 0, int maxTUCost = 1000);
 
+	/// Calculates teleport destination.
+	void calculateTeleportDestination(BattleUnit* unit, Position endPosition, BattleActionMove bam);
+	/// Get teleport destination
+	std::optional<Position> getTeleportDestination() const noexcept;
+
 	/**
 	 * Converts direction to a vector. Direction starts north = 0 and goes clockwise.
 	 * @param direction Source direction.
@@ -265,6 +273,8 @@ public:
 	bool removePreview();
 	/// Refresh the path preview.
 	void refreshPath();
+	/// Refresh the teleport preview.
+	void refreshTeleportPreview();
 
 	/// Sets _unit in order to abuse low-level pathfinding functions from outside the class.
 	void setUnit(BattleUnit *unit);
