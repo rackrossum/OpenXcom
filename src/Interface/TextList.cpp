@@ -710,7 +710,7 @@ void TextList::setCondensed(bool condensed)
  * list is selectable.
  * @return Selected row, -1 if none.
  */
-unsigned int TextList::getSelectedRow() const
+int TextList::getSelectedRow() const
 {
 	if (_rows.empty() || _selRow >= _rows.size())
 	{

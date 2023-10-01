@@ -143,7 +143,7 @@ public:
 	/// Sets the background for the selector.
 	void setBackground(Surface *bg);
 	/// Gets the selected row in the list.
-	unsigned int getSelectedRow() const;
+	int getSelectedRow() const;
 	/// Sets the margin of the text list.
 	void setMargin(int margin);
 	/// Gets the margin of the text list.
