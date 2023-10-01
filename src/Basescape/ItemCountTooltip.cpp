@@ -12,6 +12,7 @@
 #include "../Savegame/Craft.h"
 #include "../Mod/Armor.h"
 #include "../Savegame/Transfer.h"
+#include "../Savegame/SoldierDeath.h"
 
 namespace
 {
@@ -53,6 +54,9 @@ namespace OpenXcom
 			uint32_t itemsOnBaseCount = base->getStorageItems()->getItem(item);
 			for (const auto* soldier : base->getSoldiers())
 			{
+				if (soldier->getDeath() != nullptr && soldier->getDeath()->getCause() != nullptr)
+					continue;
+
 				if (auto* armorItem = soldier->getArmor()->getStoreItem(); armorItem && armorItem->getType() == item->getType())
 				{
 					if (soldier->getCraft())
