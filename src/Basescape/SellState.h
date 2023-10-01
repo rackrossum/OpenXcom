@@ -22,7 +22,7 @@
 #include "../Menu/OptionsBaseState.h"
 #include <vector>
 #include <string>
-#include <memory>
+#include "ItemCountTooltipMixin.h"
 
 namespace OpenXcom
 {
@@ -43,7 +43,7 @@ class ItemCountTooltip;
  * Sell/Sack screen that lets the player sell
  * any items in a particular base.
  */
-class SellState : public State
+class SellState : public ItemCountTooltipMixin<State>
 {
 private:
 	Base *_base;
@@ -68,7 +68,6 @@ private:
 	bool _sellAllButOne;
 	bool _delayedInitDone;
 	TransferSortDirection _previousSort, _currentSort;
-	std::unique_ptr<ItemCountTooltip> _itemCountTooltip;
 
 	/// Gets the category of the current selection.
 	std::string getCategory(int sel) const;
@@ -126,9 +125,9 @@ public:
 	/// Handler for changing the category filter.
 	void cbxCategoryChange(Action *action);
 
-	void initItemCountTooltip(Action*);
-	void onShowingItemCountTooltip();
-	void cancelShowingItemCountTooltip(Action*);
+protected:
+	const RuleItem* GetItemForTooltip() override;
+	const Base* GetBase() override;
 };
 
 }
