@@ -157,20 +157,20 @@ namespace OpenXcom
 
 		_text->setColor(Palette::blockOffset(blueChunkStart) + 3);
 		_text->setColumns(2, baseNameColumnWidth, baseItemsCountColumnWidth);
-		_text->setAlign(TextHAlign::ALIGN_RIGHT, 1);
+		_text->setAlign(TextHAlign::ALIGN_RIGHT, _text->getLastColumnIndex());
 		_text->addRow(2, nameStr.c_str(), baseStr.c_str());
 
 		if (_enableItemsOnCraftColumn)
 		{
 			_text->addColumn(craftItemsCountColumnWidth);
-			_text->setAlign(TextHAlign::ALIGN_RIGHT, 2);
+			_text->setAlign(TextHAlign::ALIGN_RIGHT, _text->getLastColumnIndex());
 			_text->expandLastRow(craftStr);
 		}
 
 		if (_enableTransferedItemsColumn)
 		{
 			_text->addColumn(transferCountColumnWidth);
-			_text->setAlign(TextHAlign::ALIGN_RIGHT, 3);
+			_text->setAlign(TextHAlign::ALIGN_RIGHT, _text->getLastColumnIndex());
 			_text->expandLastRow(transferStr);
 		}
 		_text->setRowColor(0, Palette::blockOffset(greenChunkStart) + 2);
