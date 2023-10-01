@@ -21,6 +21,7 @@
 #include "../Savegame/Transfer.h"
 #include <vector>
 #include <string>
+#include "ItemCountTooltipMixin.h"
 
 namespace OpenXcom
 {
@@ -40,7 +41,7 @@ class RuleItem;
  * Transfer screen that lets the player pick
  * what items to transfer between bases.
  */
-class TransferItemsState : public State
+class TransferItemsState : public ItemCountTooltipMixin<State>
 {
 private:
 	Base *_baseFrom, *_baseTo;
@@ -120,6 +121,10 @@ public:
 	int getTotal() const;
 	/// Handler for changing the category filter.
 	void cbxCategoryChange(Action *action);
+
+protected:
+	const RuleItem* GetItemForTooltip() override;
+	const Base* GetBase() override;
 };
 
 }
