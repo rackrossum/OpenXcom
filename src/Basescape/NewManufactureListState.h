@@ -19,6 +19,7 @@
  */
 #include "../Engine/State.h"
 #include <vector>
+#include "ItemCountTooltipMixin.h"
 
 namespace OpenXcom
 {
@@ -36,7 +37,7 @@ class ComboBox;
 /**
  * Screen which list possible productions.
  */
-class NewManufactureListState : public State
+class NewManufactureListState : public ItemCountTooltipMixin<State>
 {
 private:
 	Base *_base;
@@ -80,6 +81,10 @@ public:
 	void btnMarkAllAsSeenClick(Action *action);
 	/// Fills the list of possible productions.
 	void fillProductionList(bool refreshCategories);
+
+protected:
+	const RuleItem* GetItemForTooltip() override;
+	const Base* GetBase() override;
 };
 
 }

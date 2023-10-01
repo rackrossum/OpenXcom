@@ -102,6 +102,7 @@ NewManufactureListState::NewManufactureListState(Base *base) : _base(base), _sho
 	_lstManufacture->onMouseClick((ActionHandler)&NewManufactureListState::lstProdClickLeft, SDL_BUTTON_LEFT);
 	_lstManufacture->onMouseClick((ActionHandler)&NewManufactureListState::lstProdClickRight, SDL_BUTTON_RIGHT);
 	_lstManufacture->onMouseClick((ActionHandler)&NewManufactureListState::lstProdClickMiddle, SDL_BUTTON_MIDDLE);
+	ItemCountTooltipMixin::BindToSurface(_lstManufacture);
 
 	_btnOk->setText(tr("STR_OK"));
 	_btnOk->onMouseClick((ActionHandler)&NewManufactureListState::btnOkClick);
@@ -496,6 +497,24 @@ void NewManufactureListState::fillProductionList(bool refreshCategories)
 		_cbxCategory->setOptions(_catStrings, true);
 		_cbxCategory->onChange((ActionHandler)&NewManufactureListState::cbxCategoryChange);
 	}
+}
+
+const RuleItem* NewManufactureListState::GetItemForTooltip()
+{
+	if (_lstManufacture->getSelectedRow() < 0)
+		return nullptr;
+
+	RuleManufacture* rule = _game->getMod()->getManufacture(_displayedStrings[_lstManufacture->getSelectedRow()]);
+
+	if (rule->getProducedItems().size() != 1)
+		return nullptr;
+
+	return rule->getProducedItems().begin()->first;
+}
+
+const Base* NewManufactureListState::GetBase()
+{
+	return _base;
 }
 
 }
