@@ -206,6 +206,14 @@ int TextList::getColumnX(size_t column) const
 	return getX() + _texts[0][column]->getX();
 }
 
+int TextList::getLastColumnIndex() const noexcept
+{
+	if (_columns.empty())
+		return -1;
+
+	return _columns.size() - 1;
+}
+
 /**
  * Returns the Y position of a specific text row in the list.
  * @param row Row number.

@@ -90,6 +90,8 @@ public:
 	void setCellText(size_t row, size_t column, const std::string &text);
 	/// Gets the X position of a certain column.
 	int getColumnX(size_t column) const;
+
+	int getLastColumnIndex() const noexcept;
 	/// Gets the Y position of a certain row.
 	int getRowY(size_t row) const;
 	/// Gets the height of the row text in pixels
