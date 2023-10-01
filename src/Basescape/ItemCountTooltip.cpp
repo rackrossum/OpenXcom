@@ -13,6 +13,7 @@
 #include "../Mod/Armor.h"
 #include "../Savegame/Transfer.h"
 #include "../Savegame/SoldierDeath.h"
+#include "../Engine/Screen.h"
 
 namespace
 {
@@ -129,20 +130,24 @@ namespace OpenXcom
 		const uint16_t baseItemsCountColumnWidth = calculateBaseItemsCountColumnWidth(baseStr);
 		const uint16_t craftItemsCountColumnWidth = calculateCraftItemsCountColumnWidth(craftStr);
 		const uint16_t transferCountColumnWidth = calculateTransferItemsCountColumnWidth(transferStr);
-		const uint16_t height = calculateHeight();
+		const uint16_t textHeight = calculateHeight();
 
-		auto totalWidth = baseNameColumnWidth + baseItemsCountColumnWidth;
+		auto textWidth = baseNameColumnWidth + baseItemsCountColumnWidth;
 		if (_enableItemsOnCraftColumn)
-			totalWidth += craftItemsCountColumnWidth;
+			textWidth += craftItemsCountColumnWidth;
 
 		if (_enableTransferedItemsColumn)
-			totalWidth += transferCountColumnWidth;
-	
-		_window = new Window(nullptr, totalWidth + 2 * margin, height + 3 * margin, _coordX, _coordY);
+			textWidth += transferCountColumnWidth;
+
+		const uint16_t windowWidth = textWidth + 2 * margin;
+		const uint16_t windowHeight = textHeight + 3 * margin;
+		recalculatePositionIfNeeded(windowWidth, windowHeight);
+
+		_window = new Window(nullptr, windowWidth, windowHeight, _coordX, _coordY);
 		_state.add(_window);
 		_window->invalidate(true);
 
-		_text = new TextList(totalWidth, height, _coordX + margin, _coordY + 1.5 * margin);
+		_text = new TextList(textWidth, textHeight, _coordX + margin, _coordY + 1.5 * margin);
 		_state.add(_text);
 
 		_text->setColumns(2, baseNameColumnWidth, baseItemsCountColumnWidth);
@@ -283,5 +288,20 @@ namespace OpenXcom
 			res += font.getCharSize(ch).w;
 
 		return res;
+	}
+
+	void ItemCountTooltip::recalculatePositionIfNeeded(uint16_t windowWidth, uint16_t windowHeight)
+	{
+		const auto* screen = _game.getScreen();
+
+		if (windowWidth + _coordX > screen->getWidth() / screen->getXScale())
+		{
+			_coordX -= windowWidth;
+		}
+
+		if (windowHeight + _coordY > _game.getScreen()->getHeight() / screen->getYScale())
+		{
+			_coordY -= windowHeight;
+		}
 	}
 }

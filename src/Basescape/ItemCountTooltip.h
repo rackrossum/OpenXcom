@@ -41,6 +41,8 @@ namespace OpenXcom
 
 		uint16_t calculateStringWidth(const std::string& str, const Font& font) const;
 
+		void recalculatePositionIfNeeded(uint16_t windowWidth, uint16_t windowHeight);
+
 	private:
 		const Game& _game;
 		uint32_t _tooltipDelay;
