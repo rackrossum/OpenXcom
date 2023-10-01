@@ -21,6 +21,7 @@
 #include "../Savegame/Transfer.h"
 #include <vector>
 #include <string>
+#include <memory>
 
 namespace OpenXcom
 {
@@ -35,6 +36,7 @@ class Timer;
 class Base;
 class CannotReequipState;
 class RuleItem;
+class ItemCountTooltip;
 
 /**
  * Purchase/Hire screen that lets the player buy
@@ -64,6 +66,8 @@ private:
 	std::map<int, int> _iPrisonQty;
 	Uint8 _ammoColor;
 	Timer *_timerInc, *_timerDec;
+	std::unique_ptr<ItemCountTooltip> _itemCountTooltip;
+
 	/// Gets the category of the current selection.
 	std::string getCategory(int sel) const;
 	/// Determines if the current selection belongs to a given category.
@@ -116,6 +120,10 @@ public:
 	void updateItemStrings();
 	/// Handler for changing the category filter.
 	void cbxCategoryChange(Action *action);
+
+	void initItemCountTooltip(Action*);
+	void onShowingItemCountTooltip();
+	void cancelShowingItemCountTooltip(Action*);
 };
 
 }

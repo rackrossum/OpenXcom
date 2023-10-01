@@ -50,6 +50,7 @@
 #include "../Battlescape/CannotReequipState.h"
 #include "../Savegame/Country.h"
 #include "../Mod/RuleCountry.h"
+#include "ItemCountTooltip.h"
 
 namespace OpenXcom
 {
@@ -167,6 +168,8 @@ PurchaseState::PurchaseState(Base *base, CannotReequipState *parent) : _base(bas
 	_lstItems->onRightArrowRelease((ActionHandler)&PurchaseState::lstItemsRightArrowRelease);
 	_lstItems->onRightArrowClick((ActionHandler)&PurchaseState::lstItemsRightArrowClick);
 	_lstItems->onMousePress((ActionHandler)&PurchaseState::lstItemsMousePress);
+	_lstItems->onMouseOver((ActionHandler)&PurchaseState::initItemCountTooltip);
+	_lstItems->onMouseOut((ActionHandler)&PurchaseState::cancelShowingItemCountTooltip);
 
 	_cats.push_back("STR_ALL_ITEMS");
 	_cats.push_back("STR_FILTER_HIDDEN");
@@ -383,6 +386,8 @@ void PurchaseState::think()
 
 	_timerInc->think(this, 0);
 	_timerDec->think(this, 0);
+	if (_itemCountTooltip)
+		_itemCountTooltip->Think(this, nullptr);
 }
 
 /**
@@ -1236,6 +1241,36 @@ void PurchaseState::updateItemStrings()
 void PurchaseState::cbxCategoryChange(Action *)
 {
 	updateList();
+}
+
+void PurchaseState::initItemCountTooltip(Action* action)
+{
+	cancelShowingItemCountTooltip(nullptr);
+
+	if (_lstItems->getSelectedRow() < 0)
+		return;
+
+	_sel = _lstItems->getSelectedRow();
+	if (getRow().type != TRANSFER_ITEM)
+		return;
+
+	const auto* item = (RuleItem*)(getRow().rule);
+	StateHandler sh = (StateHandler)&PurchaseState::onShowingItemCountTooltip;
+	const auto x = action->getAbsoluteXMouse();
+	const auto y = action->getAbsoluteYMouse();
+
+	_itemCountTooltip = std::make_unique<ItemCountTooltip>(item, *_base, *_game, 1500u, *this, sh, x, y);
+	_itemCountTooltip->Init();
+}
+
+void PurchaseState::onShowingItemCountTooltip()
+{
+	_itemCountTooltip->Show();
+}
+
+void PurchaseState::cancelShowingItemCountTooltip(Action*)
+{
+	_itemCountTooltip.reset();
 }
 
 }
