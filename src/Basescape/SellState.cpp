@@ -176,7 +176,7 @@ void SellState::delayedInit()
 	_lstItems->onRightArrowRelease((ActionHandler)&SellState::lstItemsRightArrowRelease);
 	_lstItems->onRightArrowClick((ActionHandler)&SellState::lstItemsRightArrowClick);
 	_lstItems->onMousePress((ActionHandler)&SellState::lstItemsMousePress);
-	_lstItems->onMouseOver((ActionHandler)&SellState::startItemCountTooltipTimer);
+	_lstItems->onMouseOver((ActionHandler)&SellState::initItemCountTooltip);
 	_lstItems->onMouseOut((ActionHandler)&SellState::cancelShowingItemCountTooltip);
 
 	_cats.push_back("STR_ALL_ITEMS");
@@ -1134,7 +1134,7 @@ void SellState::cbxCategoryChange(Action *)
 	updateList();
 }
 
-void SellState::startItemCountTooltipTimer(Action* action)
+void SellState::initItemCountTooltip(Action* action)
 {
 	cancelShowingItemCountTooltip(nullptr);
 

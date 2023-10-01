@@ -126,7 +126,7 @@ public:
 	/// Handler for changing the category filter.
 	void cbxCategoryChange(Action *action);
 
-	void startItemCountTooltipTimer(Action*);
+	void initItemCountTooltip(Action*);
 	void onShowingItemCountTooltip();
 	void cancelShowingItemCountTooltip(Action*);
 };
