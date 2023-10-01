@@ -18,6 +18,7 @@
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include "../Engine/State.h"
+#include "ItemCountTooltipMixin.h"
 
 namespace OpenXcom
 {
@@ -32,7 +33,7 @@ class TextList;
 /**
  * Screen which displays needed elements to start productions (items/required workshop state/cost to build a unit, ...).
  */
-class ManufactureStartState : public State
+class ManufactureStartState : public ItemCountTooltipMixin<State>
 {
 private:
 	Base *_base;
@@ -41,6 +42,9 @@ private:
 	TextButton *_btnCancel, *_btnStart;
 	Text *_txtTitle, *_txtManHour, *_txtCost, *_txtWorkSpace, *_txtRequiredItemsTitle, *_txtItemNameColumn, *_txtUnitRequiredColumn, *_txtUnitAvailableColumn;
 	TextList *_lstRequiredItems;
+	std::vector<size_t> _requiredItemsRows;
+	std::vector<size_t> _producedItemsRows;
+
 public:
 	/// Creates the State.
 	ManufactureStartState(Base *base, RuleManufacture *item);
@@ -48,6 +52,10 @@ public:
 	void btnCancelClick(Action *action);
 	/// Handler for the start button.
 	void btnStartClick(Action *action);
+
+protected:
+	const RuleItem* GetItemForTooltip() override;
+	const Base* GetBase() override;
 };
 
 }

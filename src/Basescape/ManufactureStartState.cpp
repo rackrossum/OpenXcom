@@ -119,6 +119,8 @@ ManufactureStartState::ManufactureStartState(Base *base, RuleManufacture *item) 
 
 	_lstRequiredItems->setColumns(3, 140, 75, 55);
 	_lstRequiredItems->setBackground(_window);
+	ItemCountTooltipMixin::BindToSurface(_lstRequiredItems);
+	_lstRequiredItems->setSelectable(true); // TODO: workaround
 
 	bool hasRequirements = _item->getRequiredCrafts().size() > 0 || _item->getRequiredItems().size() > 0;
 	int row = 0;
@@ -146,6 +148,7 @@ ManufactureStartState::ManufactureStartState(Base *base, RuleManufacture *item) 
 		_lstRequiredItems->addRow(3, tr(iter.first->getType()).c_str(), s1.str().c_str(), s2.str().c_str());
 		_lstRequiredItems->setCellColor(row, 1, _lstRequiredItems->getSecondaryColor());
 		_lstRequiredItems->setCellColor(row, 2, _lstRequiredItems->getSecondaryColor());
+		_requiredItemsRows.push_back(row);
 		row++;
 	}
 	if (_item->getSpawnedPersonType() != "")
@@ -199,6 +202,7 @@ ManufactureStartState::ManufactureStartState(Base *base, RuleManufacture *item) 
 			std::ostringstream s1;
 			s1 << Unicode::TOK_COLOR_FLIP << iter.second;
 			_lstRequiredItems->addRow(2, tr(iter.first->getType()).c_str(), s1.str().c_str());
+			_producedItemsRows.push_back(row);
 			row++;
 		}
 	}
@@ -251,6 +255,46 @@ void ManufactureStartState::btnStartClick(Action *)
 	{
 		_game->pushState(new ManufactureInfoState(_base, _item));
 	}
+}
+
+const RuleItem* ManufactureStartState::GetItemForTooltip()
+{
+	auto selRow = _lstRequiredItems->getSelectedRow();
+	if (selRow < 0)
+		return nullptr;
+
+	auto requiredIt = std::find(_requiredItemsRows.begin(), _requiredItemsRows.end(), selRow);
+	if (requiredIt != _requiredItemsRows.end())
+	{
+		auto i = _requiredItemsRows.front();
+		for (const auto& [item, _] : _item->getRequiredItems())
+		{
+			if (i == selRow)
+				return item;
+
+			++i;
+		}
+	}
+
+	auto producedIt = std::find(_producedItemsRows.begin(), _producedItemsRows.end(), selRow);
+	if (producedIt != _producedItemsRows.end())
+	{
+		auto i = _producedItemsRows.front();
+		for (const auto& [item, _] : _item->getProducedItems())
+		{
+			if (i == selRow)
+				return item;
+
+			++i;
+		}
+	}
+
+	return nullptr;
+}
+
+const Base* ManufactureStartState::GetBase()
+{
+	return _base;
 }
 
 }
