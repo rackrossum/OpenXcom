@@ -106,10 +106,12 @@ public:
 	size_t getVisibleRows() const;
 	/// Adds a new row to the text list.
 	void addRow(int cols, ...);
+	bool expandLastRow(const std::string& text);
 	/// Removes the last row from the text list.
 	void removeLastRow();
 	/// Sets the columns in the text list.
 	void setColumns(int cols, ...);
+	void addColumn(size_t width);
 	/// Sets the palette of the text list.
 	void setPalette(const SDL_Color *colors, int firstcolor = 0, int ncolors = 256) override;
 	/// Initializes the resources for the text list.
