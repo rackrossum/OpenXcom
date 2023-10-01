@@ -1136,6 +1136,9 @@
     <ClCompile Include="Battlescape\UnitTeleportingState.cpp">
       <Filter>Battlescape</Filter>
     </ClCompile>
+    <ClCompile Include="Basescape\ItemCountTooltip.cpp">
+      <Filter>Basescape</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="resource.h" />
@@ -2335,6 +2338,9 @@
     </ClInclude>
     <ClInclude Include="Battlescape\UnitTeleportingState.h">
       <Filter>Battlescape</Filter>
+    </ClInclude>
+    <ClInclude Include="Basescape\ItemCountTooltip.h">
+      <Filter>Basescape</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
