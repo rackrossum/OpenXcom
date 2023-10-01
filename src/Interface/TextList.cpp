@@ -504,6 +504,9 @@ bool TextList::expandLastRow(const std::string& text)
 	{
 		lastRowTexts[i]->setHeight(rowHeight);
 	}
+
+	_redraw = true;
+	return true;
 }
 
 /**
