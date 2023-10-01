@@ -14,6 +14,7 @@
 #include "../Savegame/Transfer.h"
 #include "../Savegame/SoldierDeath.h"
 #include "../Engine/Screen.h"
+#include "../Engine/Palette.h"
 
 namespace
 {
@@ -120,6 +121,8 @@ namespace OpenXcom
 		_timer->stop();
 
 		constexpr uint32_t margin = 5;
+		constexpr uint8_t greenChunkStart = 3;
+		constexpr uint8_t blueChunkStart = 8;
 
 		static const auto nameStr = _state.tr("STR_NAME");
 		static const auto baseStr = _state.tr("STR_BASE");
@@ -145,11 +148,14 @@ namespace OpenXcom
 
 		_window = new Window(nullptr, windowWidth, windowHeight, _coordX, _coordY);
 		_state.add(_window);
+		_window->setColor(Palette::blockOffset(greenChunkStart) );
+		_window->setBorderColor(Palette::blockOffset(greenChunkStart + 1));
 		_window->invalidate(true);
 
 		_text = new TextList(textWidth, textHeight, _coordX + margin, _coordY + margin);
 		_state.add(_text);
 
+		_text->setColor(Palette::blockOffset(blueChunkStart) + 3);
 		_text->setColumns(2, baseNameColumnWidth, baseItemsCountColumnWidth);
 		_text->setAlign(TextHAlign::ALIGN_RIGHT, 1);
 		_text->addRow(2, nameStr.c_str(), baseStr.c_str());
@@ -167,6 +173,7 @@ namespace OpenXcom
 			_text->setAlign(TextHAlign::ALIGN_RIGHT, 3);
 			_text->expandLastRow(transferStr);
 		}
+		_text->setRowColor(0, Palette::blockOffset(greenChunkStart) + 2);
 
 		_text->setSelectable(false);
 		_text->setBackground(_window);
@@ -195,6 +202,7 @@ namespace OpenXcom
 		};
 
 		addRow(_curBaseIt);
+
 		for (auto it = _basesToCounts.cbegin(); it != _basesToCounts.cend(); ++it)
 		{
 			if (it == _curBaseIt)
@@ -210,7 +218,8 @@ namespace OpenXcom
 
 		if (_enableItemsOnCraftColumn)
 			_text->expandLastRow(std::to_string(totalTransferedCount));
-		
+
+		_text->setRowColor(_text->getLastRowIndex(), Palette::blockOffset(greenChunkStart + 1));
 		_text->invalidate(true);
 		return _text;
 	}
