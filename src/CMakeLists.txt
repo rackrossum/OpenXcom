@@ -123,6 +123,7 @@ set ( battlescape_src
   Battlescape/UnitInfoState.cpp
   Battlescape/UnitPanicBState.cpp
   Battlescape/UnitSprite.cpp
+  Battlescape/UnitTeleportingState.cpp
   Battlescape/UnitTurnBState.cpp
   Battlescape/UnitWalkBState.cpp
   Battlescape/WarningMessage.cpp
