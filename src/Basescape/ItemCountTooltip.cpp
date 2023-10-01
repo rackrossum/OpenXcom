@@ -119,7 +119,7 @@ namespace OpenXcom
 	{
 		_timer->stop();
 
-		constexpr uint32_t margin = 3;
+		constexpr uint32_t margin = 5;
 
 		static const auto nameStr = _state.tr("STR_NAME");
 		static const auto baseStr = _state.tr("STR_BASE");
@@ -140,14 +140,14 @@ namespace OpenXcom
 			textWidth += transferCountColumnWidth;
 
 		const uint16_t windowWidth = textWidth + 2 * margin;
-		const uint16_t windowHeight = textHeight + 3 * margin;
+		const uint16_t windowHeight = textHeight + 2 * margin;
 		recalculatePositionIfNeeded(windowWidth, windowHeight);
 
 		_window = new Window(nullptr, windowWidth, windowHeight, _coordX, _coordY);
 		_state.add(_window);
 		_window->invalidate(true);
 
-		_text = new TextList(textWidth, textHeight, _coordX + margin, _coordY + 1.5 * margin);
+		_text = new TextList(textWidth, textHeight, _coordX + margin, _coordY + margin);
 		_state.add(_text);
 
 		_text->setColumns(2, baseNameColumnWidth, baseItemsCountColumnWidth);
