@@ -424,6 +424,11 @@ std::vector<Soldier*> *Base::getSoldiers()
 	return &_soldiers;
 }
 
+const std::vector<Soldier*>& Base::getSoldiers() const
+{
+	return _soldiers;
+}
+
 /**
  * Pre-calculates soldier stats with various bonuses.
  */
