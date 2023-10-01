@@ -37,6 +37,7 @@
 #include "TechTreeViewerState.h"
 #include "../Ufopaedia/Ufopaedia.h"
 #include <algorithm>
+#include "ItemCountTooltip.h"
 
 namespace OpenXcom
 {
@@ -126,6 +127,8 @@ ManufactureState::ManufactureState(Base *base) : _base(base)
 	_lstManufacture->onMouseClick((ActionHandler)&ManufactureState::lstManufactureClickLeft, SDL_BUTTON_LEFT);
 	_lstManufacture->onMouseClick((ActionHandler)&ManufactureState::lstManufactureClickMiddle, SDL_BUTTON_MIDDLE);
 	_lstManufacture->onMousePress((ActionHandler)&ManufactureState::lstManufactureMousePress);
+	_lstManufacture->onMouseOver((ActionHandler)&ManufactureState::initItemCountTooltip);
+	_lstManufacture->onMouseOut((ActionHandler)&ManufactureState::cancelShowingItemCountTooltip);
 }
 
 /**
@@ -183,6 +186,11 @@ void ManufactureState::btnNewProductionClick(Action *)
 	_game->pushState(new NewManufactureListState(_base));
 }
 
+void ManufactureState::think()
+{
+	if (_itemCountTooltip)
+		_itemCountTooltip->Think(this, nullptr);
+}
 /**
  * Fills the list of base productions.
  */
@@ -297,6 +305,37 @@ void ManufactureState::lstManufactureMousePress(Action *action)
 			fillProductionList(_lstManufacture->getScroll());
 		}
 	}
+}
+
+void ManufactureState::initItemCountTooltip(Action* action)
+{
+	cancelShowingItemCountTooltip(nullptr);
+	if (_lstManufacture->getSelectedRow() < 0)
+		return;
+
+	const std::vector<Production*> productions(_base->getProductions());
+	const RuleManufacture* selectedTopic = productions[_lstManufacture->getSelectedRow()]->getRules();
+
+	if (selectedTopic->getProducedItems().size() != 1)
+		return;
+
+	const auto* item = selectedTopic->getProducedItems().begin()->first;
+	StateHandler sh = (StateHandler)&ManufactureState::onShowingItemCountTooltip;
+	const auto x = action->getAbsoluteXMouse();
+	const auto y = action->getAbsoluteYMouse();
+
+	_itemCountTooltip = std::make_unique<ItemCountTooltip>(item, *_base, *_game, 1500u, *this, sh, x, y);
+	_itemCountTooltip->Init();
+}
+
+void ManufactureState::onShowingItemCountTooltip()
+{
+	_itemCountTooltip->Show();
+}
+
+void ManufactureState::cancelShowingItemCountTooltip(Action*)
+{
+	_itemCountTooltip.reset();
 }
 
 }
