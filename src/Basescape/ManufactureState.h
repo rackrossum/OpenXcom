@@ -18,7 +18,7 @@
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include "../Engine/State.h"
-#include <memory>
+#include "ItemCountTooltipMixin.h"
 
 namespace OpenXcom
 {
@@ -34,7 +34,7 @@ class ItemCountTooltip;
  * Manufacture screen that lets the player manage
  * all the manufacturing operations of a base.
  */
-class ManufactureState : public State
+class ManufactureState : public ItemCountTooltipMixin<State>
 {
 private:
 	Base *_base;
@@ -42,15 +42,10 @@ private:
 	Window *_window;
 	Text *_txtTitle, *_txtAvailable, *_txtAllocated, *_txtSpace, *_txtFunds, *_txtItem, *_txtEngineers, *_txtProduced, *_txtCost, *_txtTimeLeft;
 	TextList *_lstManufacture;
-	std::unique_ptr<ItemCountTooltip> _itemCountTooltip;
 
 	void lstManufactureClickLeft(Action * action);
 	void lstManufactureClickMiddle(Action * action);
 	void lstManufactureMousePress(Action *action);
-
-	void initItemCountTooltip(Action*);
-	void onShowingItemCountTooltip();
-	void cancelShowingItemCountTooltip(Action*);
 public:
 	/// Creates the Manufacture state.
 	ManufactureState(Base *base);
@@ -66,8 +61,10 @@ public:
 	void btnNewProductionClick(Action * action);
 	/// Fills the list of base productions.
 	void fillProductionList(size_t scrl);
-	/// Runs the timers.
-	void think() override;
+
+protected:
+	const RuleItem* GetItemForTooltip() override;
+	const Base* GetBase() override;
 };
 
 }
