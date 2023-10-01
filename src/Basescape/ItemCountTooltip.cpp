@@ -11,6 +11,7 @@
 #include "../Engine/Font.h"
 #include "../Savegame/Craft.h"
 #include "../Mod/Armor.h"
+#include "../Savegame/Transfer.h"
 
 namespace
 {
@@ -49,7 +50,7 @@ namespace OpenXcom
 				}
 			}
 
-			int32_t itemsOnBaseCount = base->getStorageItems()->getItem(item);
+			uint32_t itemsOnBaseCount = base->getStorageItems()->getItem(item);
 			for (const auto* soldier : base->getSoldiers())
 			{
 				if (auto* armorItem = soldier->getArmor()->getStoreItem(); armorItem && armorItem->getType() == item->getType())
@@ -64,7 +65,26 @@ namespace OpenXcom
 			if (itemsOnCraftCount != 0)
 				_enableItemsOnCraftColumn = true;
 
-			auto [it, _] = _basesToCounts.emplace(base->getName(), std::make_pair(itemsOnBaseCount, itemsOnCraftCount));
+			uint32_t transferedItemsCount = 0;
+			for (const auto* transfer : *base->getTransfers())
+			{
+				if (transfer->getType() == TRANSFER_SOLDIER)
+				{
+					if (auto armorItem = transfer->getSoldier()->getArmor()->getStoreItem(); armorItem && armorItem->getType() == item->getType())
+					{
+						transferedItemsCount++;
+					}
+				}
+				else if (transfer->getType() == TRANSFER_ITEM && transfer->getItems() == item->getType())
+				{
+					transferedItemsCount++;
+				}
+			}
+
+			if (transferedItemsCount != 0)
+				_enableTransferedItemsColumn = true;
+
+			auto [it, _] = _basesToCounts.emplace(base->getName(), ItemCountRecord{ itemsOnBaseCount, itemsOnCraftCount, transferedItemsCount });
 			
 			if (&curBase == base)
 				_curBaseIt = it;
@@ -99,16 +119,20 @@ namespace OpenXcom
 		static const auto nameStr = _state.tr("STR_NAME");
 		static const auto baseStr = _state.tr("STR_BASE");
 		static const auto craftStr = _state.tr("STR_CRAFT");
+		static const auto transferStr = _state.tr("STR_EN_ROUTE");
 
 		const uint16_t baseNameColumnWidth = calculateBaseNameColumnWidth(nameStr);
 		const uint16_t baseItemsCountColumnWidth = calculateBaseItemsCountColumnWidth(baseStr);
 		const uint16_t craftItemsCountColumnWidth = calculateCraftItemsCountColumnWidth(craftStr);
+		const uint16_t transferCountColumnWidth = calculateTransferItemsCountColumnWidth(transferStr);
 		const uint16_t height = calculateHeight();
 
-		const auto totalWidth = _enableItemsOnCraftColumn
-								? baseNameColumnWidth + baseItemsCountColumnWidth + craftItemsCountColumnWidth
-								: baseNameColumnWidth + baseItemsCountColumnWidth;
+		auto totalWidth = baseNameColumnWidth + baseItemsCountColumnWidth;
+		if (_enableItemsOnCraftColumn)
+			totalWidth += craftItemsCountColumnWidth;
 
+		if (_enableTransferedItemsColumn)
+			totalWidth += transferCountColumnWidth;
 	
 		_window = new Window(nullptr, totalWidth + 2 * margin, height + 3 * margin, _coordX, _coordY);
 		_state.add(_window);
@@ -117,37 +141,48 @@ namespace OpenXcom
 		_text = new TextList(totalWidth, height, _coordX + margin, _coordY + 1.5 * margin);
 		_state.add(_text);
 
+		_text->setColumns(2, baseNameColumnWidth, baseItemsCountColumnWidth);
+		_text->setAlign(TextHAlign::ALIGN_RIGHT, 1);
+		_text->addRow(2, nameStr.c_str(), baseStr.c_str());
+
 		if (_enableItemsOnCraftColumn)
 		{
-			_text->setColumns(3, baseNameColumnWidth, baseItemsCountColumnWidth, craftItemsCountColumnWidth);
-			_text->setAlign(TextHAlign::ALIGN_RIGHT, 1);
+			_text->addColumn(craftItemsCountColumnWidth);
 			_text->setAlign(TextHAlign::ALIGN_RIGHT, 2);
-			_text->addRow(3, nameStr.c_str(), baseStr.c_str(), craftStr.c_str());
+			_text->expandLastRow(craftStr);
 		}
-		else
+
+		if (_enableTransferedItemsColumn)
 		{
-			_text->setColumns(2, baseNameColumnWidth, baseItemsCountColumnWidth);
-			_text->setAlign(TextHAlign::ALIGN_RIGHT, 1);
-			_text->addRow(2, nameStr.c_str(), baseStr.c_str());
+			_text->addColumn(transferCountColumnWidth);
+			_text->setAlign(TextHAlign::ALIGN_RIGHT, 3);
+			_text->expandLastRow(transferStr);
 		}
-			
+
 		_text->setSelectable(false);
 		_text->setBackground(_window);
 			
 		uint32_t totalBaseCount = 0;
 		uint32_t totalCraftCount = 0;
-		auto addRow = [this, &totalBaseCount, &totalCraftCount](decltype(_curBaseIt) it)
+		uint32_t totalTransferedCount = 0;
+
+		auto addRow = [this, &totalBaseCount, &totalCraftCount, &totalTransferedCount](decltype(_curBaseIt) it)
 		{
-			const auto baseCount = it->second.first;
-			const auto craftCount = it->second.second;
+			const auto baseCount = it->second.onBase;
+			const auto craftCount = it->second.onCraft;
+			const auto transferedCount = it->second.transfered;
 
 			totalBaseCount += baseCount;
 			totalCraftCount += craftCount;
+			totalTransferedCount += transferedCount;
+
+			_text->addRow(2, it->first.c_str(), std::to_string(baseCount).c_str());
 
 			if (_enableItemsOnCraftColumn)
-				_text->addRow(3, it->first.c_str(), std::to_string(baseCount).c_str(), std::to_string(craftCount).c_str());
-			else
-				_text->addRow(2, it->first.c_str(), std::to_string(baseCount).c_str());
+				_text->expandLastRow(std::to_string(craftCount));
+
+			if (_enableTransferedItemsColumn)
+				_text->expandLastRow(std::to_string(transferedCount));
 		};
 
 		addRow(_curBaseIt);
@@ -159,10 +194,13 @@ namespace OpenXcom
 			addRow(it);
 		}
 
+		_text->addRow(2, _state.tr("STR_GRAND_TOTAL").c_str(), std::to_string(totalBaseCount).c_str());
+
 		if (_enableItemsOnCraftColumn)
-			_text->addRow(3, _state.tr("STR_GRAND_TOTAL").c_str(), std::to_string(totalBaseCount).c_str(), std::to_string(totalCraftCount).c_str());
-		else
-			_text->addRow(2, _state.tr("STR_GRAND_TOTAL").c_str(), std::to_string(totalBaseCount).c_str());
+			_text->expandLastRow(std::to_string(totalCraftCount));
+
+		if (_enableItemsOnCraftColumn)
+			_text->expandLastRow(std::to_string(totalTransferedCount));
 		
 		_text->invalidate(true);
 		return _text;
@@ -189,8 +227,8 @@ namespace OpenXcom
 			return 50;
 
 		uint16_t res = calculateStringWidth(headerName, *font);
-		for (const auto& [_, pair] : _basesToCounts)
-			res = std::max(calculateStringWidth(std::to_string(pair.first), *font), res);
+		for (const auto& [_, record] : _basesToCounts)
+			res = std::max(calculateStringWidth(std::to_string(record.onBase), *font), res);
 
 		res += smallWidthOffset;
 		return res;
@@ -203,8 +241,22 @@ namespace OpenXcom
 			return 50;
 
 		uint16_t res = calculateStringWidth(headerName, *font);
-		for (const auto& [_, pair] : _basesToCounts)
-			res = std::max(calculateStringWidth(std::to_string(pair.second), *font), res);
+		for (const auto& [_, record] : _basesToCounts)
+			res = std::max(calculateStringWidth(std::to_string(record.onCraft), *font), res);
+
+		res += smallWidthOffset;
+		return res;
+	}
+
+	uint16_t ItemCountTooltip::calculateTransferItemsCountColumnWidth(const std::string& headerName) const
+	{
+		const auto* font = _game.getMod()->getFont("FONT_SMALL");
+		if (!font)
+			return 50;
+
+		uint16_t res = calculateStringWidth(headerName, *font);
+		for (const auto& [_, record] : _basesToCounts)
+			res = std::max(calculateStringWidth(std::to_string(record.transfered), *font), res);
 
 		res += smallWidthOffset;
 		return res;

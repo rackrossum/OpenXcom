@@ -36,6 +36,7 @@ namespace OpenXcom
 		uint16_t calculateBaseNameColumnWidth(const std::string& headerName) const;
 		uint16_t calculateBaseItemsCountColumnWidth(const std::string& headerName) const;
 		uint16_t calculateCraftItemsCountColumnWidth(const std::string& headerName) const;
+		uint16_t calculateTransferItemsCountColumnWidth(const std::string& headerName) const;
 		uint16_t calculateHeight() const;
 
 		uint16_t calculateStringWidth(const std::string& str, const Font& font) const;
@@ -49,10 +50,18 @@ namespace OpenXcom
 		double _coordX;
 		double _coordY;
 
-		std::map<std::string, std::pair<uint32_t, uint32_t>> _basesToCounts;
-		std::map<std::string, std::pair<uint32_t, uint32_t>>::const_iterator _curBaseIt;
+		struct ItemCountRecord
+		{
+			uint32_t onBase;
+			uint32_t onCraft;
+			uint32_t transfered;
+		};
+
+		std::map<std::string, ItemCountRecord> _basesToCounts;
+		std::map<std::string, ItemCountRecord>::const_iterator _curBaseIt;
 
 		bool _enableItemsOnCraftColumn = false;
+		bool _enableTransferedItemsColumn = false;
 		TextList* _text = nullptr;
 		Window* _window = nullptr;
 	};
