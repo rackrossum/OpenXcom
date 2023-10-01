@@ -1150,7 +1150,7 @@ void SellState::initItemCountTooltip(Action* action)
 	const auto x = action->getAbsoluteXMouse();
 	const auto y = action->getAbsoluteYMouse();
 
-	_itemCountTooltip = std::make_unique<ItemCountTooltip>(item, *_base, *_game, 2500u, *this, sh, x, y);
+	_itemCountTooltip = std::make_unique<ItemCountTooltip>(item, *_base, *_game, 1500u, *this, sh, x, y);
 	_itemCountTooltip->Init();
 }
 
