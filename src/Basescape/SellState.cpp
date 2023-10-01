@@ -54,6 +54,7 @@
 #include "TransferBaseState.h"
 #include "TechTreeViewerState.h"
 #include "../Ufopaedia/Ufopaedia.h"
+#include "ItemCountTooltip.h"
 
 namespace OpenXcom
 {
@@ -175,6 +176,8 @@ void SellState::delayedInit()
 	_lstItems->onRightArrowRelease((ActionHandler)&SellState::lstItemsRightArrowRelease);
 	_lstItems->onRightArrowClick((ActionHandler)&SellState::lstItemsRightArrowClick);
 	_lstItems->onMousePress((ActionHandler)&SellState::lstItemsMousePress);
+	_lstItems->onMouseOver((ActionHandler)&SellState::startItemCountTooltipTimer);
+	_lstItems->onMouseOut((ActionHandler)&SellState::cancelShowingItemCountTooltip);
 
 	_cats.push_back("STR_ALL_ITEMS");
 
@@ -371,6 +374,8 @@ void SellState::think()
 
 	_timerInc->think(this, 0);
 	_timerDec->think(this, 0);
+	if (_itemCountTooltip)
+		_itemCountTooltip->Think(this, nullptr);
 }
 
 /**
@@ -1129,4 +1134,33 @@ void SellState::cbxCategoryChange(Action *)
 	updateList();
 }
 
+void SellState::startItemCountTooltipTimer(Action* action)
+{
+	cancelShowingItemCountTooltip(nullptr);
+
+	if (_lstItems->getSelectedRow() < 0)
+		return;
+
+	_sel = _lstItems->getSelectedRow();
+	if (getRow().type != TRANSFER_ITEM)
+		return;
+
+	const auto* item = (RuleItem*)(getRow().rule);
+	StateHandler sh = (StateHandler)&SellState::onShowingItemCountTooltip;
+	const auto x = action->getAbsoluteXMouse();
+	const auto y = action->getAbsoluteYMouse();
+
+	_itemCountTooltip = std::make_unique<ItemCountTooltip>(item, *_base, *_game, 2500u, *this, sh, x, y);
+	_itemCountTooltip->Init();
+}
+
+void SellState::onShowingItemCountTooltip()
+{
+	_itemCountTooltip->Show();
+}
+
+void SellState::cancelShowingItemCountTooltip(Action*)
+{
+	_itemCountTooltip.reset();
+}
 }

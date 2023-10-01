@@ -22,6 +22,7 @@
 #include "../Menu/OptionsBaseState.h"
 #include <vector>
 #include <string>
+#include <memory>
 
 namespace OpenXcom
 {
@@ -36,6 +37,7 @@ class Timer;
 class Base;
 class DebriefingState;
 class RuleItem;
+class ItemCountTooltip;
 
 /**
  * Sell/Sack screen that lets the player sell
@@ -66,6 +68,7 @@ private:
 	bool _sellAllButOne;
 	bool _delayedInitDone;
 	TransferSortDirection _previousSort, _currentSort;
+	std::unique_ptr<ItemCountTooltip> _itemCountTooltip;
 
 	/// Gets the category of the current selection.
 	std::string getCategory(int sel) const;
@@ -122,6 +125,10 @@ public:
 	void updateItemStrings();
 	/// Handler for changing the category filter.
 	void cbxCategoryChange(Action *action);
+
+	void startItemCountTooltipTimer(Action*);
+	void onShowingItemCountTooltip();
+	void cancelShowingItemCountTooltip(Action*);
 };
 
 }
