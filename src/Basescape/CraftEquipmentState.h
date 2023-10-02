@@ -21,6 +21,7 @@
 #include <vector>
 #include <map>
 #include <string>
+#include "ItemCountTooltipMixin.h"
 
 namespace OpenXcom
 {
@@ -38,7 +39,7 @@ class Base;
  * Equipment screen that lets the player
  * pick the equipment to carry on a craft.
  */
-class CraftEquipmentState : public State
+class CraftEquipmentState : public ItemCountTooltipMixin<State>
 {
 private:
 	TextButton *_btnOk, *_btnClear, *_btnInventory;
@@ -115,6 +116,10 @@ public:
 	void btnLoadClick(Action *action);
 	/// Handler for clicking the Save button.
 	void btnSaveClick(Action *action);
+
+protected:
+	const RuleItem* GetItemForTooltip() override;
+	const Base* GetBase() override;
 };
 
 }
