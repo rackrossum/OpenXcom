@@ -284,6 +284,8 @@ public:
 	bool isFloating() const;
 	/// Have unit floor below?
 	bool haveNoFloorBelow() const { return _haveNoFloorBelow; }
+	// Teleport unit.
+	void teleport(Tile* tile, SavedBattleGame* saveBattleGame = nullptr);
 
 	/// Aim.
 	void aim(bool aiming);

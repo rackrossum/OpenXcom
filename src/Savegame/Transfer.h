@@ -102,7 +102,8 @@ public:
 	/// Advances the transfer.
 	void advance(Base *base);
 	/// Get a pointer to the soldier being transferred.
-	Soldier *getSoldier();
+	Soldier* getSoldier();
+	const Soldier* getSoldier() const noexcept;
 
 };
 

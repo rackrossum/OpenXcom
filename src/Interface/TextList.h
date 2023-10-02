@@ -90,6 +90,8 @@ public:
 	void setCellText(size_t row, size_t column, const std::string &text);
 	/// Gets the X position of a certain column.
 	int getColumnX(size_t column) const;
+
+	int getLastColumnIndex() const noexcept;
 	/// Gets the Y position of a certain row.
 	int getRowY(size_t row) const;
 	/// Gets the height of the row text in pixels
@@ -106,10 +108,12 @@ public:
 	size_t getVisibleRows() const;
 	/// Adds a new row to the text list.
 	void addRow(int cols, ...);
+	bool expandLastRow(const std::string& text);
 	/// Removes the last row from the text list.
 	void removeLastRow();
 	/// Sets the columns in the text list.
 	void setColumns(int cols, ...);
+	void addColumn(size_t width);
 	/// Sets the palette of the text list.
 	void setPalette(const SDL_Color *colors, int firstcolor = 0, int ncolors = 256) override;
 	/// Initializes the resources for the text list.
@@ -143,7 +147,7 @@ public:
 	/// Sets the background for the selector.
 	void setBackground(Surface *bg);
 	/// Gets the selected row in the list.
-	unsigned int getSelectedRow() const;
+	int getSelectedRow() const;
 	/// Sets the margin of the text list.
 	void setMargin(int margin);
 	/// Gets the margin of the text list.

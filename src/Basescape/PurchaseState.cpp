@@ -50,6 +50,7 @@
 #include "../Battlescape/CannotReequipState.h"
 #include "../Savegame/Country.h"
 #include "../Mod/RuleCountry.h"
+#include "ItemCountTooltip.h"
 
 namespace OpenXcom
 {
@@ -167,6 +168,7 @@ PurchaseState::PurchaseState(Base *base, CannotReequipState *parent) : _base(bas
 	_lstItems->onRightArrowRelease((ActionHandler)&PurchaseState::lstItemsRightArrowRelease);
 	_lstItems->onRightArrowClick((ActionHandler)&PurchaseState::lstItemsRightArrowClick);
 	_lstItems->onMousePress((ActionHandler)&PurchaseState::lstItemsMousePress);
+	ItemCountTooltipMixin::BindToSurface(_lstItems);
 
 	_cats.push_back("STR_ALL_ITEMS");
 	_cats.push_back("STR_FILTER_HIDDEN");
@@ -379,7 +381,7 @@ PurchaseState::~PurchaseState()
  */
 void PurchaseState::think()
 {
-	State::think();
+	ItemCountTooltipMixin::think();
 
 	_timerInc->think(this, 0);
 	_timerDec->think(this, 0);
@@ -1236,6 +1238,23 @@ void PurchaseState::updateItemStrings()
 void PurchaseState::cbxCategoryChange(Action *)
 {
 	updateList();
+}
+
+const RuleItem* PurchaseState::GetItemForTooltip()
+{
+	if (_lstItems->getSelectedRow() < 0)
+		return nullptr;
+
+	_sel = _lstItems->getSelectedRow();
+	if (getRow().type != TRANSFER_ITEM)
+		return nullptr;
+
+	return (RuleItem*)(getRow().rule);
+}
+
+const Base* PurchaseState::GetBase()
+{
+	return _base;
 }
 
 }

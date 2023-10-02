@@ -20,6 +20,7 @@
 #include "../fmath.h"
 #include <stack>
 #include <algorithm>
+#include <functional>
 #include "BaseFacility.h"
 #include "../Mod/RuleBaseFacility.h"
 #include "Craft.h"
@@ -421,6 +422,11 @@ std::vector<BaseFacility*> *Base::getFacilities()
 std::vector<Soldier*> *Base::getSoldiers()
 {
 	return &_soldiers;
+}
+
+const std::vector<Soldier*>& Base::getSoldiers() const
+{
+	return _soldiers;
 }
 
 /**

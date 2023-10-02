@@ -129,6 +129,7 @@ TransferItemsState::TransferItemsState(Base *baseFrom, Base *baseTo, DebriefingS
 	_lstItems->onRightArrowRelease((ActionHandler)&TransferItemsState::lstItemsRightArrowRelease);
 	_lstItems->onRightArrowClick((ActionHandler)&TransferItemsState::lstItemsRightArrowClick);
 	_lstItems->onMousePress((ActionHandler)&TransferItemsState::lstItemsMousePress);
+	ItemCountTooltipMixin::BindToSurface(_lstItems);
 
 	_distance = getDistance();
 
@@ -281,7 +282,7 @@ TransferItemsState::~TransferItemsState()
  */
 void TransferItemsState::think()
 {
-	State::think();
+	ItemCountTooltipMixin::think();
 
 	_timerInc->think(this, 0);
 	_timerDec->think(this, 0);
@@ -1073,6 +1074,23 @@ void TransferItemsState::cbxCategoryChange(Action *)
 	}
 
 	updateList();
+}
+
+const RuleItem* TransferItemsState::GetItemForTooltip()
+{
+	if (_lstItems->getSelectedRow() < 0)
+		return nullptr;
+
+	_sel = _lstItems->getSelectedRow();
+	if (getRow().type != TRANSFER_ITEM)
+		return nullptr;
+	
+	return (RuleItem*)getRow().rule;;
+}
+
+const Base* TransferItemsState::GetBase()
+{
+	return _baseFrom;
 }
 
 }

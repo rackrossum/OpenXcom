@@ -56,10 +56,14 @@ private:
 	std::unordered_set<std::string> _disabledResearch;
 	std::unordered_set<std::string> _alreadyAvailableResearch, _alreadyAvailableManufacture, _alreadyAvailableFacilities, _alreadyAvailableCrafts;
 	std::unordered_set<std::string> _protectedItems, _alreadyAvailableItems;
+	std::map<size_t, std::string> _lstRightRowToUfopediaArcticle;
+
 	void initLists();
 	void onSelectLeftTopic(Action *action);
 	void onSelectRightTopic(Action *action);
 	void onSelectFullTopic(Action *action);
+	void onTryOpenUfopediaArcticle(Action*);
+
 public:
 	/// Creates the Tech Tree Viewer state.
 	TechTreeViewerState(const RuleResearch *r = 0, const RuleManufacture *m = 0, const RuleBaseFacility *f = 0, const RuleCraft *c = 0);

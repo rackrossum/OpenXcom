@@ -21,6 +21,7 @@
 #include "../Savegame/Transfer.h"
 #include <vector>
 #include <string>
+#include "ItemCountTooltipMixin.h"
 
 namespace OpenXcom
 {
@@ -35,12 +36,13 @@ class Timer;
 class Base;
 class CannotReequipState;
 class RuleItem;
+class ItemCountTooltip;
 
 /**
  * Purchase/Hire screen that lets the player buy
  * new items for a base.
  */
-class PurchaseState : public State
+class PurchaseState : public ItemCountTooltipMixin<State>
 {
 private:
 	Base *_base;
@@ -64,6 +66,7 @@ private:
 	std::map<int, int> _iPrisonQty;
 	Uint8 _ammoColor;
 	Timer *_timerInc, *_timerDec;
+
 	/// Gets the category of the current selection.
 	std::string getCategory(int sel) const;
 	/// Determines if the current selection belongs to a given category.
@@ -116,6 +119,10 @@ public:
 	void updateItemStrings();
 	/// Handler for changing the category filter.
 	void cbxCategoryChange(Action *action);
+
+protected:
+	const RuleItem* GetItemForTooltip() override;
+	const Base* GetBase() override;
 };
 
 }

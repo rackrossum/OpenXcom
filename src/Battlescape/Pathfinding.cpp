@@ -74,36 +74,32 @@ PathfindingNode *Pathfinding::getNode(Position pos)
 }
 
 /**
- * Calculates the shortest path.
+ * Calculates the final position of path if possible.
  * @param unit Unit taking the path.
  * @param endPosition The position we want to reach.
- * @param missileTarget Target of the path.
- * @param maxTUCost Maximum time units the path can cost.
  */
-void Pathfinding::calculate(BattleUnit *unit, Position endPosition, BattleActionMove bam, const BattleUnit *missileTarget, int maxTUCost)
+std::optional<Position> Pathfinding::tryCalculateFinalPosition(Position endPosition,
+															const BattleUnit* unit,
+															BattleActionMove bam,
+															const BattleUnit* missileTarget)
 {
-	_totalTUCost = {};
-	_path.clear();
-
 	const int size = bam != BAM_MISSILE ? unit->getArmor()->getSize() : 1;
 
 	// i'm DONE with these out of bounds errors.
-	if (endPosition.x > _save->getMapSizeX() - size || endPosition.y > _save->getMapSizeY() - size || endPosition.x < 0 || endPosition.y < 0) return;
-
-	bool sneak = Options::sneakyAI && unit->getFaction() == FACTION_HOSTILE;
+	if (endPosition.x > _save->getMapSizeX() - size
+		|| endPosition.y > _save->getMapSizeY() - size
+		|| endPosition.x < 0 || endPosition.y < 0)
+		return {};
 
 	Position startPosition = unit->getPosition();
 	MovementType movementType = getMovementType(unit, missileTarget, bam);
-	if (missileTarget != 0 && maxTUCost == -1 && bam == BAM_MISSILE)  // pathfinding for missile
-	{
-		maxTUCost = 10000;
-	}
-	_unit = unit;
 
 	const Tile* destinationTile = _save->getTile(endPosition);
 
 	// check if destination is not blocked
-	if (isBlocked(_unit, destinationTile, O_FLOOR, bam, missileTarget) || isBlocked(_unit, destinationTile, O_OBJECT, bam, missileTarget)) return;
+	if (isBlocked(_unit, destinationTile, O_FLOOR, bam, missileTarget)
+		|| isBlocked(_unit, destinationTile, O_OBJECT, bam, missileTarget))
+		return {};
 
 	// the following check avoids that the unit walks behind the stairs if we click behind the stairs to make it go up the stairs.
 	// it only works if the unit is on one of the 2 tiles on the stairs, or on the tile right in front of the stairs.
@@ -122,7 +118,7 @@ void Pathfinding::calculate(BattleUnit *unit, Position endPosition, BattleAction
 	// and is considered passable terrain for whatever reason (usually bigwall type objects)
 	if (endPosition.z == _save->getMapSizeZ())
 	{
-		return; // Icarus is a bad role model for XCom soldiers.
+		return {}; // Icarus is a bad role model for XCom soldiers.
 	}
 	if (movementType != MT_FLY && bam != BAM_MISSILE)
 	{
@@ -134,7 +130,32 @@ void Pathfinding::calculate(BattleUnit *unit, Position endPosition, BattleAction
 		}
 	}
 	// check if destination is not blocked
-	if (isBlocked(_unit, destinationTile, O_FLOOR, bam, missileTarget) || isBlocked(_unit, destinationTile, O_OBJECT, bam, missileTarget)) return;
+	if (isBlocked(_unit, destinationTile, O_FLOOR, bam, missileTarget) || isBlocked(_unit, destinationTile, O_OBJECT, bam, missileTarget))
+		return {};
+
+	return destinationTile->getPosition();
+}
+
+/**
+ * Calculates the shortest path.
+ * @param unit Unit taking the path.
+ * @param endPosition The position we want to reach.
+ * @param missileTarget Target of the path.
+ * @param maxTUCost Maximum time units the path can cost.
+ */
+void Pathfinding::calculate(BattleUnit *unit, Position endPosition, BattleActionMove bam, const BattleUnit *missileTarget, int maxTUCost)
+{
+	_totalTUCost = {};
+	_path.clear();
+	_unit = unit;
+	_teleportDestination.reset();
+
+	const auto finalPosition = tryCalculateFinalPosition(endPosition, unit, bam, missileTarget);
+	if (!finalPosition)
+		return;
+
+	endPosition = *finalPosition;
+	Position startPosition = unit->getPosition();
 
 	// Strafing move allowed only to adjacent squares on same z. "Same z" rule mainly to simplify walking render.
 	_strafeMove = bam == BAM_STRAFE && (startPosition.z == endPosition.z) &&
@@ -156,6 +177,8 @@ void Pathfinding::calculate(BattleUnit *unit, Position endPosition, BattleAction
 		}
 	}
 
+	const bool sneak = Options::sneakyAI && unit->getFaction() == FACTION_HOSTILE;
+
 	// look for a possible fast and accurate bresenham path and skip A*
 	if (bresenhamPath(startPosition, endPosition, bam, missileTarget, sneak))
 	{
@@ -166,11 +189,37 @@ void Pathfinding::calculate(BattleUnit *unit, Position endPosition, BattleAction
 	{
 		abortPath(); // if bresenham failed, we shouldn't keep the path it was attempting, in case A* fails too.
 	}
+
+	if (missileTarget != 0 && maxTUCost == -1 && bam == BAM_MISSILE) // pathfinding for missile
+	{
+		maxTUCost = 10000;
+	}
 	// Now try through A*.
 	if (!aStarPath(startPosition, endPosition, bam, missileTarget, sneak, maxTUCost))
 	{
 		abortPath();
 	}
+}
+
+/**
+ * Calculates teleport destination.
+ * @param unit Unit taking the path.
+ * @param endPosition The position we want to reach.
+ * @return Position to teleport.
+ */
+void Pathfinding::calculateTeleportDestination(BattleUnit* unit, Position endPosition, BattleActionMove bam)
+{
+	_totalTUCost = {};
+	_path.clear();
+	_unit = unit;
+	_teleportDestination.reset();
+
+	_teleportDestination = tryCalculateFinalPosition(endPosition, unit, bam, nullptr);
+}
+
+std::optional<Position> Pathfinding::getTeleportDestination() const noexcept
+{
+	return _teleportDestination;
 }
 
 /**
@@ -747,6 +796,7 @@ void Pathfinding::abortPath()
 {
 	_totalTUCost = {};
 	_path.clear();
+	_teleportDestination.reset();
 }
 
 /**
@@ -1138,7 +1188,7 @@ bool Pathfinding::validateUpDown(const BattleUnit *bu, const Position& startPosi
  */
 bool Pathfinding::previewPath(bool bRemove)
 {
-	if (_path.empty())
+	if (_path.empty() && !_teleportDestination)
 		return false;
 
 	if (!bRemove && _pathPreviewed)
@@ -1156,7 +1206,10 @@ bool Pathfinding::previewPath(bool bRemove)
 		_altUsed = Options::strafe && _save->isAltPressed(true);
 	}
 
-	refreshPath();
+	if (!_path.empty())
+		refreshPath();
+	else
+		refreshTeleportPreview();
 
 	return true;
 }
@@ -1266,6 +1319,42 @@ void Pathfinding::refreshPath()
 	if (switchBack)
 	{
 		_save->getBattleGame()->setTUReserved(BA_NONE);
+	}
+}
+
+/**
+ * Refresh the path preview.
+ */
+void Pathfinding::refreshTeleportPreview()
+{
+	if (!_teleportDestination)
+	{
+		Log(LOG_ERROR) << "No teleport destination for preview";
+		return;
+	}
+
+	const MovementType movementType = getMovementType(_unit, nullptr, BAM_NORMAL);
+	Tile* tile = _save->getTile(*_teleportDestination);
+	Tile* tileAbove = _save->getTile(*_teleportDestination + Position(0, 0, 1));
+	if (_pathPreviewed)
+	{
+		tile->setPreview(10);
+		tile->setTUMarker(0);
+		tile->setEnergyMarker(0);
+
+		if (tileAbove && tileAbove->getPreview() == 0 && movementType != MT_FLY) // unit fell down, retroactively make the tile above's direction marker to DOWN
+		{
+			tileAbove->setPreview(DIR_DOWN);
+		}
+
+		tile->setMarkerColor(Pathfinding::green);
+	}
+	else
+	{
+		tile->setPreview(-1);
+		tile->setTUMarker(-1);
+		tile->setEnergyMarker(-1);
+		tile->setMarkerColor(0);
 	}
 }
 

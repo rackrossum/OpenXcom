@@ -37,6 +37,7 @@
 #include "TechTreeViewerState.h"
 #include "../Ufopaedia/Ufopaedia.h"
 #include <algorithm>
+#include "ItemCountTooltip.h"
 
 namespace OpenXcom
 {
@@ -126,6 +127,7 @@ ManufactureState::ManufactureState(Base *base) : _base(base)
 	_lstManufacture->onMouseClick((ActionHandler)&ManufactureState::lstManufactureClickLeft, SDL_BUTTON_LEFT);
 	_lstManufacture->onMouseClick((ActionHandler)&ManufactureState::lstManufactureClickMiddle, SDL_BUTTON_MIDDLE);
 	_lstManufacture->onMousePress((ActionHandler)&ManufactureState::lstManufactureMousePress);
+	ItemCountTooltipMixin::BindToSurface(_lstManufacture);
 }
 
 /**
@@ -178,11 +180,10 @@ void ManufactureState::onCurrentGlobalProductionClick(Action *)
  * Opens the screen with the list of possible productions.
  * @param action Pointer to an action.
  */
-void ManufactureState::btnNewProductionClick(Action *)
+void ManufactureState::btnNewProductionClick(Action*)
 {
 	_game->pushState(new NewManufactureListState(_base));
 }
-
 /**
  * Fills the list of base productions.
  */
@@ -297,6 +298,25 @@ void ManufactureState::lstManufactureMousePress(Action *action)
 			fillProductionList(_lstManufacture->getScroll());
 		}
 	}
+}
+
+const RuleItem* ManufactureState::GetItemForTooltip()
+{
+	if (_lstManufacture->getSelectedRow() < 0)
+		return nullptr;
+
+	const std::vector<Production*> productions(_base->getProductions());
+	const RuleManufacture* selectedTopic = productions[_lstManufacture->getSelectedRow()]->getRules();
+
+	if (selectedTopic->getProducedItems().size() != 1)
+		return nullptr;
+
+	return selectedTopic->getProducedItems().begin()->first;
+}
+
+const Base* ManufactureState::GetBase()
+{
+	return _base;
 }
 
 }

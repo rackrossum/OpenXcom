@@ -118,7 +118,8 @@ void Window::think()
 {
 	if (_hidden && _popupStep < 1.0)
 	{
-		_state->hideAll();
+		if (_state)
+			_state->hideAll();
 		setHidden(false);
 	}
 
@@ -144,11 +145,15 @@ void Window::popup()
 	}
 	else
 	{
-		if (_screen)
+		if (_state)
 		{
-			_state->toggleScreen();
+			if (_screen)
+			{
+				_state->toggleScreen();
+			}
+			_state->showAll();
 		}
-		_state->showAll();
+		
 		_popupStep = 1.0;
 		_timer->stop();
 	}

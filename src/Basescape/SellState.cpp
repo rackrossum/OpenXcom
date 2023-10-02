@@ -54,6 +54,7 @@
 #include "TransferBaseState.h"
 #include "TechTreeViewerState.h"
 #include "../Ufopaedia/Ufopaedia.h"
+#include "ItemCountTooltip.h"
 
 namespace OpenXcom
 {
@@ -175,6 +176,7 @@ void SellState::delayedInit()
 	_lstItems->onRightArrowRelease((ActionHandler)&SellState::lstItemsRightArrowRelease);
 	_lstItems->onRightArrowClick((ActionHandler)&SellState::lstItemsRightArrowClick);
 	_lstItems->onMousePress((ActionHandler)&SellState::lstItemsMousePress);
+	ItemCountTooltipMixin::BindToSurface(_lstItems);
 
 	_cats.push_back("STR_ALL_ITEMS");
 
@@ -367,7 +369,7 @@ void SellState::init()
  */
 void SellState::think()
 {
-	State::think();
+	ItemCountTooltipMixin::think();
 
 	_timerInc->think(this, 0);
 	_timerDec->think(this, 0);
@@ -1127,6 +1129,23 @@ void SellState::cbxCategoryChange(Action *)
 	}
 
 	updateList();
+}
+
+const RuleItem* SellState::GetItemForTooltip()
+{
+	if (_lstItems->getSelectedRow() < 0)
+		return nullptr;
+
+	_sel = _lstItems->getSelectedRow();
+	if (getRow().type != TRANSFER_ITEM)
+		return nullptr;
+
+	return (RuleItem*)(getRow().rule);
+}
+
+const Base* SellState::GetBase()
+{
+	return _base;
 }
 
 }

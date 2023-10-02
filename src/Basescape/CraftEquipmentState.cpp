@@ -203,6 +203,7 @@ CraftEquipmentState::CraftEquipmentState(Base *base, size_t craft) :
 	_lstEquipment->onRightArrowRelease((ActionHandler)&CraftEquipmentState::lstEquipmentRightArrowRelease);
 	_lstEquipment->onRightArrowClick((ActionHandler)&CraftEquipmentState::lstEquipmentRightArrowClick);
 	_lstEquipment->onMousePress((ActionHandler)&CraftEquipmentState::lstEquipmentMousePress);
+	ItemCountTooltipMixin::BindToSurface(_lstEquipment);
 
 	_btnQuickSearch->setText(""); // redraw
 	_btnQuickSearch->onEnter((ActionHandler)&CraftEquipmentState::btnQuickSearchApply);
@@ -503,7 +504,7 @@ void CraftEquipmentState::initList()
  */
 void CraftEquipmentState::think()
 {
-	State::think();
+	ItemCountTooltipMixin::think();
 
 	_timerLeft->think(this, 0);
 	_timerRight->think(this, 0);
@@ -1138,6 +1139,20 @@ void CraftEquipmentState::btnSaveClick(Action *)
 		_game->pushState(new CraftEquipmentSaveState(this));
 		_returningFromGlobalTemplates = true;
 	}
+}
+
+const RuleItem* CraftEquipmentState::GetItemForTooltip()
+{
+	const auto row = _lstEquipment->getSelectedRow();
+	if (row < 0)
+		return nullptr;
+
+	return _game->getMod()->getItem(_items[row]);
+}
+
+const Base* CraftEquipmentState::GetBase()
+{
+	return _base;
 }
 
 }

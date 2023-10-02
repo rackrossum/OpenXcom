@@ -206,6 +206,14 @@ int TextList::getColumnX(size_t column) const
 	return getX() + _texts[0][column]->getX();
 }
 
+int TextList::getLastColumnIndex() const noexcept
+{
+	if (_columns.empty())
+		return -1;
+
+	return _columns.size() - 1;
+}
+
 /**
  * Returns the Y position of a specific text row in the list.
  * @param row Row number.
@@ -425,6 +433,90 @@ void TextList::addRow(int cols, ...)
 	updateArrows();
 }
 
+bool TextList::expandLastRow(const std::string& text)
+{
+	if (_texts.empty() || _texts.back().empty() || _texts.back().size() >= _columns.size())
+		return false;
+
+	auto& lastRowTexts = _texts.back();
+	auto& lastText = _texts.back().back();
+	const auto newTextIndex = lastRowTexts.size();
+
+	auto newTextX = lastText->getX();
+	if (_condensed)
+	{
+		newTextX += lastText->getTextWidth();
+	}
+	else
+	{
+		newTextX += _columns[newTextIndex - 1];
+	}
+
+	const auto newTextY = lastText->getY();
+
+	const int width = _flooding ? 340 : _columns[newTextIndex];
+	// Place text
+	Text* newText = new Text(width, _font->getHeight(), _margin + newTextX, newTextY);
+	newText->setPalette(this->getPalette());
+	newText->initText(_big, _small, _lang);
+	newText->setColor(_color);
+	newText->setSecondaryColor(_color2);
+
+	if (_align[newTextIndex])
+		newText->setAlign(_align[newTextIndex]);
+
+	newText->setHighContrast(_contrast);
+	if (_font == _big)
+		newText->setBig();
+	else
+		newText->setSmall();
+
+	newText->setText(text);
+
+	// grab this before we enable word wrapping so we can use it to calculate
+	// the total row height below
+	int vmargin = _font->getHeight() - newText->getTextHeight();
+	// Wordwrap text if necessary
+	int rows = _rows.back();
+	if (_wrap && newText->getTextWidth() > newText->getWidth())
+	{
+		newText->setWordWrap(true, true, _ignoreSeparators);
+		rows = std::max(rows, newText->getNumLines());
+	}
+
+	// Places dots between text
+	if (_dot)
+	{
+		std::string buf = lastText->getText();
+		unsigned int w = lastText->getTextWidth();
+		while (w < _columns[newTextIndex - 1])
+		{
+			if (_align[newTextIndex - 1] != ALIGN_RIGHT)
+			{
+				w += _font->getChar('.').getCrop()->w + _font->getSpacing();
+				buf += '.';
+			}
+			if (_align[newTextIndex - 1] != ALIGN_LEFT)
+			{
+				w += _font->getChar('.').getCrop()->w + _font->getSpacing();
+				buf.insert(0, 1, '.');
+			}
+		}
+		lastText->setText(buf);
+	}
+
+	lastRowTexts.push_back(newText);
+
+	const auto rowHeight = std::max(lastText->getHeight(), newText->getTextHeight() + vmargin);
+	for (int i = 0; i < lastRowTexts.size(); ++i)
+	{
+		lastRowTexts[i]->setHeight(rowHeight);
+	}
+
+	_redraw = true;
+	return true;
+}
+
 /**
  * Removes the last row from the text list.
  */
@@ -476,6 +568,11 @@ void TextList::setColumns(int cols, ...)
 	}
 
 	va_end(args);
+}
+
+void TextList::addColumn(size_t width)
+{
+	_columns.push_back(width);
 }
 
 /**
@@ -710,7 +807,7 @@ void TextList::setCondensed(bool condensed)
  * list is selectable.
  * @return Selected row, -1 if none.
  */
-unsigned int TextList::getSelectedRow() const
+int TextList::getSelectedRow() const
 {
 	if (_rows.empty() || _selRow >= _rows.size())
 	{
