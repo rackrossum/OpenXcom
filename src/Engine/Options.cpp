@@ -231,7 +231,7 @@ void create()
 	_info.push_back(OptionInfo("oxceAutomaticPromotions", &oxceAutomaticPromotions, true, "STR_AUTOMATICPROMOTIONS", "STR_OXCE"));
 
 	// OXCEN
-	_info.push_back(OptionInfo("oxcenItemTooltipMode", &oxcenItemTooltipMode, 1, "STR_ITEM_TOOLTIP_MODE", "STR_OXCE"));
+	_info.push_back(OptionInfo("oxcenItemTooltipMode", &OXCEN::ItemTooltipMode, 1, "STR_ITEM_TOOLTIP_MODE", "STR_OXCE"));
 
 	// OXCE hidden
 #ifdef __MOBILE__

@@ -14,7 +14,7 @@ namespace OpenXcom
 	protected:
 		void BindToSurface(InteractiveSurface* surface)
 		{
-			if (Options::oxcenItemTooltipMode == static_cast<int>(Options::OXCEN::ItemTooltipMode::None))
+			if (Options::OXCEN::ItemTooltipMode == static_cast<int>(Options::OXCEN::ItemTooltipMode::None))
 				return;
 
 			surface->onMouseOver((ActionHandler)&ItemCountTooltipMixin::InitTooltip);

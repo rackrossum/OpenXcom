@@ -85,8 +85,8 @@ OPT bool oxceEnableOffCentreShooting;
 namespace OXCEN
 {
 	enum class ItemTooltipMode;
+	OPT int ItemTooltipMode;
 }
-OPT int oxcenItemTooltipMode;
 
 // OXCE hidden, accessible only via options.cfg
 OPT bool oxceFatFingerLinks;
