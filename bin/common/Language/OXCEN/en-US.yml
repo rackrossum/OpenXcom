@@ -1,0 +1,5 @@
+en-US:
+  STR_ITEM_TOOLTIP_MODE: "Mode of opening the item quantity popup window"
+  STR_ITEM_TOOLTIP_MODE_DESC: "Item quantity popup opening modes. 0 - Disabled, 1 - On hover"
+#STR_ITEM_TOOLTIP_CURSOR_DELAY: "Delay of appearance of item quantity pop-up window".
+#STR_ITEM_TOOLTIP_MODE_DESCRIPTION: "Delay of item quantity popup window appearance at cursor hover in seconds in the range of 0.1 - 3 sec".

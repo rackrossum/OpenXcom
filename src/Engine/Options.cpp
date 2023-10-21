@@ -230,6 +230,9 @@ void create()
 	_info.push_back(OptionInfo("oxceManualPromotions", &oxceManualPromotions, false, "STR_MANUALPROMOTIONS", "STR_OXCE"));
 	_info.push_back(OptionInfo("oxceAutomaticPromotions", &oxceAutomaticPromotions, true, "STR_AUTOMATICPROMOTIONS", "STR_OXCE"));
 
+	// OXCEN
+	_info.push_back(OptionInfo("oxcenItemTooltipMode", &oxcenItemTooltipMode, 1, "STR_ITEM_TOOLTIP_MODE", "STR_OXCE"));
+
 	// OXCE hidden
 #ifdef __MOBILE__
 	_info.push_back(OptionInfo("oxceFatFingerLinks", &oxceFatFingerLinks, true));

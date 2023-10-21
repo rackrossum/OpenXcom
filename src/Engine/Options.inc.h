@@ -81,6 +81,13 @@ OPT int oxceAutoNightVisionThreshold;
 OPT bool oxceRememberDisabledCraftWeapons;
 OPT bool oxceEnableOffCentreShooting;
 
+// OXCEN
+namespace OXCEN
+{
+	enum class ItemTooltipMode;
+}
+OPT int oxcenItemTooltipMode;
+
 // OXCE hidden, accessible only via options.cfg
 OPT bool oxceFatFingerLinks;
 OPT int oxceThrottleMouseMoveEvent;

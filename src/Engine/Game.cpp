@@ -623,6 +623,7 @@ void Game::loadLanguages()
 	const std::string dirLanguageAndroid = "Language/Android/";
 	const std::string dirLanguageOXCE = "Language/OXCE/";
 	const std::string dirLanguageTechnical = "Language/Technical/";
+	const std::string dirLanguageOXCEN = "Language/OXCEN/";
 
 	const std::string defaultLangYml = defaultLang + ".yml";
 	const std::string currentLangYml = currentLang + ".yml";
@@ -634,22 +635,46 @@ void Game::loadLanguages()
 	auto sliceAndroid = FileMap::getSlice(dirLanguageAndroid + defaultLangYml);
 	auto sliceOXCE = FileMap::getSlice(dirLanguageOXCE + defaultLangYml);
 	auto sliceTechnical = FileMap::getSlice(dirLanguageTechnical + defaultLangYml);
+	auto sliceOXCEN = FileMap::getSlice(dirLanguageOXCEN + defaultLangYml);
 
 	auto slice2 = FileMap::getSlice(dirLanguage + currentLangYml);
 	auto sliceAndroid2 = FileMap::getSlice(dirLanguageAndroid + currentLangYml);
 	auto sliceOXCE2 = FileMap::getSlice(dirLanguageOXCE + currentLangYml);
 	auto sliceTechnical2 = FileMap::getSlice(dirLanguageTechnical + currentLangYml);
+	auto sliceOXCEN2 = FileMap::getSlice(dirLanguageOXCEN + currentLangYml);
 
 	bool twoLangs = currentLang != defaultLang;
-	for (size_t i = 0; i < slice.size(); ++i) {
-		if (slice[i]) { _lang->loadFile(slice[i]); }
-		if (twoLangs && slice2[i]) { _lang->loadFile(slice2[i]); }
-		if (sliceAndroid[i]) { _lang->loadFile(sliceAndroid[i]); }
-		if (twoLangs && sliceAndroid2[i]) { _lang->loadFile(sliceAndroid2[i]); }
-		if (sliceOXCE[i]) { _lang->loadFile(sliceOXCE[i]); }
-		if (twoLangs && sliceOXCE2[i]) { _lang->loadFile(sliceOXCE2[i]); }
-		if (sliceTechnical[i]) { _lang->loadFile(sliceTechnical[i]); }
-		if (twoLangs && sliceTechnical2[i]) { _lang->loadFile(sliceTechnical2[i]); }
+	for (size_t i = 0; i < slice.size(); ++i)
+	{
+		if (slice[i])
+			_lang->loadFile(slice[i]);
+
+		if (twoLangs && slice2[i])
+			_lang->loadFile(slice2[i]);
+
+		if (sliceAndroid[i])
+			_lang->loadFile(sliceAndroid[i]);
+
+		if (twoLangs && sliceAndroid2[i])
+			_lang->loadFile(sliceAndroid2[i]);
+
+		if (sliceOXCE[i])
+			_lang->loadFile(sliceOXCE[i]);
+
+		if (twoLangs && sliceOXCE2[i])
+			_lang->loadFile(sliceOXCE2[i]);
+
+		if (sliceTechnical[i])
+			_lang->loadFile(sliceTechnical[i]);
+
+		if (twoLangs && sliceTechnical2[i])
+			_lang->loadFile(sliceTechnical2[i]);
+
+		if (sliceOXCEN[i])
+			_lang->loadFile(sliceOXCEN[i]);
+
+		if (twoLangs && sliceOXCEN2[i])
+			_lang->loadFile(sliceOXCEN2[i]);
 	}
 
 	_lang->loadRule(_mod->getExtraStrings(), defaultLang);

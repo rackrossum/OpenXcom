@@ -4,6 +4,7 @@
 #include "../Engine/InteractiveSurface.h"
 #include <memory>
 #include "../Engine/Action.h"
+#include "../Engine/Options.h"
 
 namespace OpenXcom
 {
@@ -13,6 +14,9 @@ namespace OpenXcom
 	protected:
 		void BindToSurface(InteractiveSurface* surface)
 		{
+			if (Options::oxcenItemTooltipMode == static_cast<int>(Options::OXCEN::ItemTooltipMode::None))
+				return;
+
 			surface->onMouseOver((ActionHandler)&ItemCountTooltipMixin::InitTooltip);
 			surface->onMouseOut((ActionHandler)&ItemCountTooltipMixin::ClearTooltip);
 		}

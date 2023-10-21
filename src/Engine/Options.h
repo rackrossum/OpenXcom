@@ -71,6 +71,14 @@ namespace Options
 #define OPT extern
 #include "Options.inc.h"
 #undef OPT
+	namespace OXCEN
+	{
+		enum class ItemTooltipMode
+		{
+			None,
+			Hover
+		};
+	};
 
 	/// Creates the options info.
 	void create();
