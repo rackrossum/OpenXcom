@@ -33,7 +33,7 @@ namespace OpenXcom
 			const auto x = action->getAbsoluteXMouse();
 			const auto y = action->getAbsoluteYMouse();
 
-			_tooltip = std::make_unique<ItemCountTooltip>(item, *GetBase(), *StateType::_game, 1500u, *this, sh, x, y);
+			_tooltip = std::make_unique<ItemCountTooltip>(item, *GetBase(), *StateType::_game, Options::OXCEN::ItemTooltipHoverDelayInTenths * 100u, *this, sh, x, y);
 			_tooltip->Init();
 		}
 

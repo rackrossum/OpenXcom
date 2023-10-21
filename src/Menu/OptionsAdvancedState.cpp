@@ -315,6 +315,11 @@ void OptionsAdvancedState::lstOptionsClick(Action *action)
 			min = 0;
 			max = 1;
 		}
+		else if (i == &Options::OXCEN::ItemTooltipHoverDelayInTenths)
+		{
+			min = 5;
+			max = 30;
+		}
 
 		if (*i < min)
 		{
