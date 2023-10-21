@@ -234,6 +234,7 @@ void create()
 	_info.push_back(OptionInfo("oxcenItemTooltipMode", &OXCEN::ItemTooltipMode, 1, "STR_ITEM_TOOLTIP_MODE", "STR_OXCE"));
 	_info.push_back(OptionInfo("oxcenItemTooltipHoverDelay", &OXCEN::ItemTooltipHoverDelayInTenths, 15, "STR_ITEM_TOOLTIP_HOVER_DELAY", "STR_OXCE"));
 	_info.push_back(OptionInfo("oxcenHighlightLowManaSoldiersMode", &OXCEN::highlightLowManaSoldiersMode, 2, "STR_HIGHLIGHT_LOW_MANA_SOLDIERS", "STR_OXCE"));
+	_info.push_back(OptionInfo("oxcenDefaultSoldiersSorter", &OXCEN::defaultSoldiersSorter, 0, "STR_DEFAULT_SOLDIERS_SORTER", "STR_OXCE"));
 
 	// OXCE hidden
 #ifdef __MOBILE__

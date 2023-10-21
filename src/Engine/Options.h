@@ -86,6 +86,14 @@ namespace Options
 			Name,
 			Rank
 		};
+
+		enum class DefaultSoldiersSorter
+		{
+			Original,
+			KillCount,
+			FiringAccuracy,
+			CurrentMana
+		};
 	};
 
 	/// Creates the options info.

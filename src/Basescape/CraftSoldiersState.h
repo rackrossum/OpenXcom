@@ -21,6 +21,7 @@
 #include <vector>
 #include "SoldierSortUtil.h"
 #include "HighlightLowManaSoldiersMixin.h"
+#include "SortSoldiersMixin.h"
 
 namespace OpenXcom
 {
@@ -38,7 +39,7 @@ struct SortFunctor;
  * Select Squad screen that lets the player
  * pick the soldiers to assign to a craft.
  */
-class CraftSoldiersState : public HighlightLowManaSoldiersMixin<State>
+class CraftSoldiersState : public SortSoldiersMixin<HighlightLowManaSoldiersMixin<State>>
 {
 private:
 	TextButton *_btnOk;
@@ -48,7 +49,6 @@ private:
 	ComboBox *_cbxSortBy;
 	TextList *_lstSoldiers;
 
-	Base *_base;
 	size_t _craft;
 	Uint8 _otherCraftColor;
 	std::vector<Soldier *> _origSoldierOrder;

@@ -53,7 +53,7 @@ namespace OpenXcom
  * @param game Pointer to the core game.
  * @param base Pointer to the base to get info from.
  */
-SoldiersState::SoldiersState(Base *base) : _base(base), _origSoldierOrder(*_base->getSoldiers()), _dynGetter(NULL)
+SoldiersState::SoldiersState(Base *base) : SortSoldiersMixin(base), _origSoldierOrder(*_base->getSoldiers()), _dynGetter(NULL)
 {
 	bool isPsiBtnVisible = Options::anytimePsiTraining && _base->getAvailablePsiLabs() > 0;
 	bool isTrnBtnVisible = _base->getAvailableTraining() > 0;
@@ -184,51 +184,7 @@ SoldiersState::SoldiersState(Base *base) : _base(base), _origSoldierOrder(*_base
 	_txtCraft->setText(tr("STR_CRAFT"));
 
 	// populate sort options
-	std::vector<std::string> sortOptions;
-	sortOptions.push_back(tr("STR_ORIGINAL_ORDER"));
-	_sortFunctors.push_back(NULL);
-
-#define PUSH_IN(strId, functor) \
-	sortOptions.push_back(tr(strId)); \
-	_sortFunctors.push_back(new SortFunctor(_game, functor));
-
-	PUSH_IN("STR_ID", idStat);
-	PUSH_IN("STR_NAME_UC", nameStat);
-	PUSH_IN("STR_CRAFT", craftIdStat);
-	PUSH_IN("STR_SOLDIER_TYPE", typeStat);
-	PUSH_IN("STR_RANK", rankStat);
-	PUSH_IN("STR_IDLE_DAYS", idleDaysStat);
-	PUSH_IN("STR_MISSIONS2", missionsStat);
-	PUSH_IN("STR_KILLS2", killsStat);
-	PUSH_IN("STR_WOUND_RECOVERY2", woundRecoveryStat);
-	if (_game->getMod()->isManaFeatureEnabled() && !_game->getMod()->getReplenishManaAfterMission())
-	{
-		PUSH_IN("STR_MANA_CURRENT", currentManaStat);
-		PUSH_IN("STR_MANA_MISSING", manaMissingStat);
-	}
-	PUSH_IN("STR_TIME_UNITS", tuStat);
-	PUSH_IN("STR_STAMINA", staminaStat);
-	PUSH_IN("STR_HEALTH", healthStat);
-	PUSH_IN("STR_BRAVERY", braveryStat);
-	PUSH_IN("STR_REACTIONS", reactionsStat);
-	PUSH_IN("STR_FIRING_ACCURACY", firingStat);
-	PUSH_IN("STR_THROWING_ACCURACY", throwingStat);
-	PUSH_IN("STR_MELEE_ACCURACY", meleeStat);
-	PUSH_IN("STR_STRENGTH", strengthStat);
-	if (_game->getMod()->isManaFeatureEnabled())
-	{
-		// "unlock" is checked later
-		PUSH_IN("STR_MANA_POOL", manaStat);
-	}
-	PUSH_IN("STR_PSIONIC_STRENGTH", psiStrengthStat);
-	PUSH_IN("STR_PSIONIC_SKILL", psiSkillStat);
-
-#undef PUSH_IN
-
-	_cbxSortBy->setOptions(sortOptions);
-	_cbxSortBy->setSelected(0);
-	_cbxSortBy->onChange((ActionHandler)&SoldiersState::cbxSortByChange);
-	_cbxSortBy->setText(tr("STR_SORT_BY"));
+	FillSorters(_sortFunctors, *_cbxSortBy, (ActionHandler)&SoldiersState::cbxSortByChange);
 
 	//_lstSoldiers->setArrowColumn(188, ARROW_VERTICAL);
 	_lstSoldiers->setColumns(3, 106, 98, 76);
@@ -278,50 +234,7 @@ void SoldiersState::cbxSortByChange(Action *action)
 		// if CTRL is pressed, we only want to show the dynamic column, without actual sorting
 		if (!ctrlPressed)
 		{
-			if (selIdx == 2)
-			{
-				std::stable_sort(_base->getSoldiers()->begin(), _base->getSoldiers()->end(),
-					[](const Soldier* a, const Soldier* b)
-					{
-						return Unicode::naturalCompare(a->getName(), b->getName());
-					}
-				);
-			}
-			else if (selIdx == 3)
-			{
-				std::stable_sort(_base->getSoldiers()->begin(), _base->getSoldiers()->end(),
-					[](const Soldier* a, const Soldier* b)
-					{
-						if (a->getCraft())
-						{
-							if (b->getCraft())
-							{
-								if (a->getCraft()->getRules() == b->getCraft()->getRules())
-								{
-									return a->getCraft()->getId() < b->getCraft()->getId();
-								}
-								else
-								{
-									return a->getCraft()->getRules() < b->getCraft()->getRules();
-								}
-							}
-							else
-							{
-								return true; // a < b
-							}
-						}
-						return false; // b > a
-					}
-				);
-			}
-			else
-			{
-				std::stable_sort(_base->getSoldiers()->begin(), _base->getSoldiers()->end(), *compFunc);
-			}
-			if (_game->isShiftPressed())
-			{
-				std::reverse(_base->getSoldiers()->begin(), _base->getSoldiers()->end());
-			}
+			DoSort(selIdx, compFunc);
 		}
 	}
 	else

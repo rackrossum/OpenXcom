@@ -91,6 +91,9 @@ namespace OXCEN
 
 	enum class HighlightLowManaSoldiersMode;
 	OPT int highlightLowManaSoldiersMode;
+
+	enum class DefaultSoldiersSorter;
+	OPT int defaultSoldiersSorter;
 }
 
 // OXCE hidden, accessible only via options.cfg

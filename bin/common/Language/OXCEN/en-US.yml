@@ -6,3 +6,5 @@ en-US:
   STR_ITEM_TOOLTIP_HOTKEY: "Open the item quantity pop-up window"
   STR_HIGHLIGHT_LOW_MANA_SOLDIERS: "Highlight soldiers with low mana"
   STR_HIGHLIGHT_LOW_MANA_SOLDIERS_DESC: "Highlight the row field of soldiers with low mana(sanity, vigor). 0 - Disabled, 1 - Highlight name, 2 - Highlight rank"
+  STR_DEFAULT_SOLDIERS_SORTER: "Default sorting of soldiers"
+  STR_DEFAULT_SOLDIERS_SORTER_DESC: "When the soldiers list window is displayed, the soldiers are sorted. 0 - in the original order, 1 - by number of kills, 2 - by accuracy of the shot, 3 - by current mana(sanity, vigor)"

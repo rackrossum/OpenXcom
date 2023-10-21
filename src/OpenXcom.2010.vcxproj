@@ -763,6 +763,7 @@
     <ClInclude Include="Basescape\SoldiersState.h" />
     <ClInclude Include="Basescape\SoldierTransformationListState.h" />
     <ClInclude Include="Basescape\SoldierTransformationState.h" />
+    <ClInclude Include="Basescape\SortSoldiersMixin.h" />
     <ClInclude Include="Basescape\StoresState.h" />
     <ClInclude Include="Basescape\TechTreeSelectState.h" />
     <ClInclude Include="Basescape\TechTreeViewerState.h" />
