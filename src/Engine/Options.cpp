@@ -415,6 +415,9 @@ void create()
 	_info.push_back(OptionInfo("keyNightVisionHold", &keyNightVisionHold, SDLK_SPACE, "STR_HOLD_NIGHT_VISION", "STR_OXCE"));
 	_info.push_back(OptionInfo("keySelectMusicTrack", &keySelectMusicTrack, SDLK_END, "STR_SELECT_MUSIC_TRACK", "STR_OXCE"));
 
+	//OXCEN
+	_info.push_back(OptionInfo("oxcenItemTooltipHotkey", &OXCEN::ItemTooltipHotkey, SDLK_TAB, "STR_ITEM_TOOLTIP_HOTKEY", "STR_OXCE"));
+
 #ifdef __MORPHOS__
 	_info.push_back(OptionInfo("FPS", &FPS, 15, "STR_FPS_LIMIT", "STR_GENERAL"));
 	_info.push_back(OptionInfo("FPSInactive", &FPSInactive, 15, "STR_FPS_INACTIVE_LIMIT", "STR_GENERAL"));

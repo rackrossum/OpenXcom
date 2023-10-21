@@ -87,6 +87,7 @@ namespace OXCEN
 	enum class ItemTooltipMode;
 	OPT int ItemTooltipMode;
 	OPT int ItemTooltipHoverDelayInTenths;
+	OPT SDLKey ItemTooltipHotkey;
 }
 
 // OXCE hidden, accessible only via options.cfg

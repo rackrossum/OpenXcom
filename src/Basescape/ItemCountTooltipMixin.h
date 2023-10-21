@@ -17,11 +17,32 @@ namespace OpenXcom
 			if (Options::OXCEN::ItemTooltipMode == static_cast<int>(Options::OXCEN::ItemTooltipMode::None))
 				return;
 
-			surface->onMouseOver((ActionHandler)&ItemCountTooltipMixin::InitTooltip);
-			surface->onMouseOut((ActionHandler)&ItemCountTooltipMixin::ClearTooltip);
+			if (Options::OXCEN::ItemTooltipMode == static_cast<int>(Options::OXCEN::ItemTooltipMode::Hover))
+			{
+				surface->onMouseOver((ActionHandler)&ItemCountTooltipMixin::InitTooltipHover);
+				surface->onMouseOut((ActionHandler)&ItemCountTooltipMixin::ClearTooltip);
+			}
+			else if (Options::OXCEN::ItemTooltipMode == static_cast<int>(Options::OXCEN::ItemTooltipMode::Hotkey))
+			{
+				surface->onMouseOver((ActionHandler)&ItemCountTooltipMixin::StoreCoords);
+				surface->onKeyboardPress((ActionHandler)&ItemCountTooltipMixin::InitTooltipHotkey, Options::OXCEN::ItemTooltipHotkey);
+				surface->onKeyboardRelease((ActionHandler)&ItemCountTooltipMixin::ClearTooltip, Options::OXCEN::ItemTooltipHotkey);
+				surface->onMouseOut((ActionHandler)&ItemCountTooltipMixin::ClearTooltip);
+			}
 		}
 
-		void InitTooltip(Action* action)
+		void InitTooltipHover(Action* action)
+		{
+			StoreCoords(action);
+			InitTooltip(action, Options::OXCEN::ItemTooltipHoverDelayInTenths * 100u);
+		}
+
+		void InitTooltipHotkey(Action* action)
+		{
+			InitTooltip(action, 0u);
+		}
+
+		void InitTooltip(Action* action, uint32_t delay)
 		{
 			ClearTooltip(nullptr);
 
@@ -30,10 +51,8 @@ namespace OpenXcom
 				return;
 
 			StateHandler sh = (StateHandler)&ItemCountTooltipMixin::ShowTooltip;
-			const auto x = action->getAbsoluteXMouse();
-			const auto y = action->getAbsoluteYMouse();
 
-			_tooltip = std::make_unique<ItemCountTooltip>(item, *GetBase(), *StateType::_game, Options::OXCEN::ItemTooltipHoverDelayInTenths * 100u, *this, sh, x, y);
+			_tooltip = std::make_unique<ItemCountTooltip>(item, *GetBase(), *StateType::_game, delay, *this, sh, _x, _y);
 			_tooltip->Init();
 		}
 
@@ -50,6 +69,12 @@ namespace OpenXcom
 			_tooltip.reset();
 		}
 
+		void StoreCoords(Action* action)
+		{
+			_x = action->getAbsoluteXMouse();
+			_y = action->getAbsoluteYMouse();
+		}
+
 		void think() override
 		{
 			StateType::think();
@@ -59,6 +84,8 @@ namespace OpenXcom
 
 	private:
 		std::unique_ptr<ItemCountTooltip> _tooltip;
+		double _x;
+		double _y;
 	};
 
 }

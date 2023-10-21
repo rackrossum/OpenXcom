@@ -313,7 +313,7 @@ void OptionsAdvancedState::lstOptionsClick(Action *action)
 		else if (i == &Options::OXCEN::ItemTooltipMode)
 		{
 			min = 0;
-			max = 1;
+			max = 2;
 		}
 		else if (i == &Options::OXCEN::ItemTooltipHoverDelayInTenths)
 		{

@@ -76,7 +76,8 @@ namespace Options
 		enum class ItemTooltipMode
 		{
 			None,
-			Hover
+			Hover,
+			Hotkey
 		};
 	};
 
