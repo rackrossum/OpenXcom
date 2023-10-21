@@ -364,7 +364,7 @@ void CraftSoldiersState::initList(size_t scrl)
 		{
 			color = _lstSoldiers->getColor();
 		}
-		setListRowColor(row, color, *soldier);
+		setListRowColor(*_lstSoldiers, row, color, *soldier);
 		
 		row++;
 	}
@@ -541,7 +541,7 @@ void CraftSoldiersState::lstSoldiersClick(Action *action)
 				_game->pushState(new ErrorMessageState(tr("STR_NOT_ENOUGH_CRAFT_SPACE"), _palette, _game->getMod()->getInterface("soldierInfo")->getElement("errorMessage")->color, "BACK01.SCR", _game->getMod()->getInterface("soldierInfo")->getElement("errorPalette")->color));
 			}
 		}
-		setListRowColor(row, color, *s);
+		setListRowColor(*_lstSoldiers, row, color, *s);
 
 		_txtAvailable->setText(tr("STR_SPACE_AVAILABLE").arg(c->getSpaceAvailable()));
 		_txtUsed->setText(tr("STR_SPACE_USED").arg(c->getSpaceUsed()));
@@ -603,7 +603,7 @@ void CraftSoldiersState::btnDeassignAllSoldiersClick(Action *action)
 		{
 			color = _otherCraftColor;
 		}
-		setListRowColor(row, color, *soldier);
+		setListRowColor(*_lstSoldiers, row, color, *soldier);
 
 		row++;
 	}
@@ -627,7 +627,7 @@ void CraftSoldiersState::btnDeassignCraftSoldiersClick(Action *action)
 		{
 			soldier->setCraftAndMoveEquipment(0, _base, _game->getSavedGame()->getMonthsPassed() == -1);
 			_lstSoldiers->setCellText(row, 2, tr("STR_NONE_UC"));
-			setListRowColor(row, _lstSoldiers->getColor(), *soldier);
+			setListRowColor(*_lstSoldiers, row, _lstSoldiers->getColor(), *soldier);
 		}
 		row++;
 	}
@@ -635,16 +635,4 @@ void CraftSoldiersState::btnDeassignCraftSoldiersClick(Action *action)
 	_txtAvailable->setText(tr("STR_SPACE_AVAILABLE").arg(c->getSpaceAvailable()));
 	_txtUsed->setText(tr("STR_SPACE_USED").arg(c->getSpaceUsed()));
 }
-
-void CraftSoldiersState::setListRowColor(size_t row, Uint8 color, const Soldier& soldier)
-{
-	_lstSoldiers->setRowColor(row, color);
-	if (_game->getSavedGame()->isManaUnlocked(_game->getMod()))
-	{
-		const auto missingManaColor = soldier.getMissingManaColorForState();
-		if (missingManaColor)
-			_lstSoldiers->setCellColor(row, 1, *missingManaColor);
-	}
-}
-
 }

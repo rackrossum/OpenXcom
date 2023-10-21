@@ -320,6 +320,11 @@ void OptionsAdvancedState::lstOptionsClick(Action *action)
 			min = 5;
 			max = 30;
 		}
+		else if (i == &Options::OXCEN::highlightLowManaSoldiersMode)
+		{
+			min = 0;
+			max = 2;
+		}
 
 		if (*i < min)
 		{

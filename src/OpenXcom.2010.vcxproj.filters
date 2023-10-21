@@ -2345,6 +2345,9 @@
     <ClInclude Include="Basescape\ItemCountTooltipMixin.h">
       <Filter>Basescape</Filter>
     </ClInclude>
+    <ClInclude Include="Basescape\HighlightLowManaSoldiersMixin.h">
+      <Filter>Basescape</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Geoscape">

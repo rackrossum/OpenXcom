@@ -79,6 +79,13 @@ namespace Options
 			Hover,
 			Hotkey
 		};
+
+		enum class HighlightLowManaSoldiersMode
+		{
+			None,
+			Name,
+			Rank
+		};
 	};
 
 	/// Creates the options info.

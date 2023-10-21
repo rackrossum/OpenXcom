@@ -729,6 +729,7 @@
     <ClInclude Include="Basescape\GlobalAlienContainmentState.h" />
     <ClInclude Include="Basescape\GlobalManufactureState.h" />
     <ClInclude Include="Basescape\GlobalResearchState.h" />
+    <ClInclude Include="Basescape\HighlightLowManaSoldiersMixin.h" />
     <ClInclude Include="Basescape\ItemCountTooltip.h" />
     <ClInclude Include="Basescape\ItemCountTooltipMixin.h" />
     <ClInclude Include="Basescape\ManufactureDependenciesTreeState.h" />

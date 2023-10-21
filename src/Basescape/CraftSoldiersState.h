@@ -20,6 +20,7 @@
 #include "../Engine/State.h"
 #include <vector>
 #include "SoldierSortUtil.h"
+#include "HighlightLowManaSoldiersMixin.h"
 
 namespace OpenXcom
 {
@@ -37,7 +38,7 @@ struct SortFunctor;
  * Select Squad screen that lets the player
  * pick the soldiers to assign to a craft.
  */
-class CraftSoldiersState : public State
+class CraftSoldiersState : public HighlightLowManaSoldiersMixin<State>
 {
 private:
 	TextButton *_btnOk;
@@ -55,7 +56,6 @@ private:
 	getStatFn_t _dynGetter;
 	/// initializes the display list based on the craft soldier's list and the position to display
 	void initList(size_t scrl);
-	void setListRowColor(size_t row, Uint8 color, const Soldier& soldier);
 public:
 	/// Creates the Craft Soldiers state.
 	CraftSoldiersState(Base *base, size_t craft);

@@ -20,6 +20,7 @@
 #include "../Engine/State.h"
 #include <vector>
 #include "SoldierSortUtil.h"
+#include "HighlightLowManaSoldiersMixin.h"
 
 namespace OpenXcom
 {
@@ -37,7 +38,7 @@ struct SortFunctor;
  * Soldiers screen that lets the player
  * manage all the soldiers in a base.
  */
-class SoldiersState : public State
+class SoldiersState : public HighlightLowManaSoldiersMixin<State>
 {
 private:
 	TextButton *_btnOk, *_btnPsiTraining, *_btnTraining, *_btnMemorial;
@@ -52,7 +53,6 @@ private:
 	std::vector<std::string> _availableOptions;
 	///initializes the display list based on the craft soldier's list and the position to display
 	void initList(size_t scrl);
-	void setListRowColor(size_t row, Uint8 color, const Soldier& soldier);
 public:
 	/// Creates the Soldiers state.
 	SoldiersState(Base *base);

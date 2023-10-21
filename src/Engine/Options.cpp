@@ -226,13 +226,14 @@ void create()
 	_info.push_back(OptionInfo("oxceAutoNightVisionThreshold", &oxceAutoNightVisionThreshold, 15, "STR_AUTO_NIGHT_VISION_THRESHOLD", "STR_OXCE"));
 	_info.push_back(OptionInfo("oxceAutoSell", &oxceAutoSell, false, "STR_AUTO_SELL", "STR_OXCE"));
 	_info.push_back(OptionInfo("oxceRememberDisabledCraftWeapons", &oxceRememberDisabledCraftWeapons, false, "STR_REMEMBER_DISABLED_CRAFT_WEAPONS", "STR_OXCE"));
-	_info.push_back(OptionInfo("oxceEnableOffCentreShooting", &oxceEnableOffCentreShooting, false, "STR_OFF_CENTRE_SHOOTING", "STR_OXCE"));
+	_info.push_back(OptionInfo("oxceEnableOffCentreShofoting", &oxceEnableOffCentreShooting, false, "STR_OFF_CENTRE_SHOOTING", "STR_OXCE"));
 	_info.push_back(OptionInfo("oxceManualPromotions", &oxceManualPromotions, false, "STR_MANUALPROMOTIONS", "STR_OXCE"));
 	_info.push_back(OptionInfo("oxceAutomaticPromotions", &oxceAutomaticPromotions, true, "STR_AUTOMATICPROMOTIONS", "STR_OXCE"));
 
 	// OXCEN
 	_info.push_back(OptionInfo("oxcenItemTooltipMode", &OXCEN::ItemTooltipMode, 1, "STR_ITEM_TOOLTIP_MODE", "STR_OXCE"));
 	_info.push_back(OptionInfo("oxcenItemTooltipHoverDelay", &OXCEN::ItemTooltipHoverDelayInTenths, 15, "STR_ITEM_TOOLTIP_HOVER_DELAY", "STR_OXCE"));
+	_info.push_back(OptionInfo("oxcenHighlightLowManaSoldiersMode", &OXCEN::highlightLowManaSoldiersMode, 2, "STR_HIGHLIGHT_LOW_MANA_SOLDIERS", "STR_OXCE"));
 
 	// OXCE hidden
 #ifdef __MOBILE__
