@@ -52,6 +52,7 @@ private:
 	std::vector<std::string> _availableOptions;
 	///initializes the display list based on the craft soldier's list and the position to display
 	void initList(size_t scrl);
+	void setListRowColor(size_t row, Uint8 color, const Soldier& soldier);
 public:
 	/// Creates the Soldiers state.
 	SoldiersState(Base *base);

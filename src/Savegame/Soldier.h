@@ -19,6 +19,7 @@
  */
 #include <string>
 #include <yaml-cpp/yaml.h>
+#include <optional>
 #include "../Mod/Unit.h"
 #include "../Mod/StatString.h"
 #include "../Engine/Script.h"
@@ -198,6 +199,7 @@ public:
 
 	/// Gets the amount of missing mana.
 	int getManaMissing() const;
+	std::optional<Uint8> getMissingManaColorForState() const;
 	/// Sets the amount of missing mana.
 	void setManaMissing(int manaMissing);
 	/// Gets the soldier's mana recovery time.

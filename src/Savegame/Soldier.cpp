@@ -39,6 +39,7 @@
 #include "../Mod/RuleCommendations.h"
 #include "Base.h"
 #include "ItemContainer.h"
+#include "../Engine/Palette.h"
 
 namespace OpenXcom
 {
@@ -1132,6 +1133,23 @@ bool Soldier::canDefendBase() const
 int Soldier::getManaMissing() const
 {
 	return _manaMissing;
+}
+
+std::optional<Uint8> Soldier::getMissingManaColorForState() const
+{
+	const double mana = _currentStats.mana;
+	if (mana == 0)
+		return {};
+
+	const auto missingManaPercentage = (mana - getManaMissing()) / mana * 100;
+	if (missingManaPercentage >= 50)
+		return {};
+
+	constexpr Uint8 partions = 5;
+	constexpr Uint8 paletteBlock = 9;
+	for (auto i = 0; i < partions; ++i)
+		if (missingManaPercentage < (i + 1) * 10)
+			return Palette::blockOffset(paletteBlock) + partions * 2 - 2 * i;
 }
 
 /**

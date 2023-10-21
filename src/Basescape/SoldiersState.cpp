@@ -445,12 +445,16 @@ void SoldiersState::initList(size_t scrl)
 
 		if (soldier->getCraft() == 0)
 		{
-			_lstSoldiers->setRowColor(row, _lstSoldiers->getSecondaryColor());
+			setListRowColor(row, _lstSoldiers->getSecondaryColor(), *soldier);
 		}
+		else
+			setListRowColor(row, _lstSoldiers->getColor(), *soldier);
+
 		if (soldier->getDeath())
 		{
 			_lstSoldiers->setRowColor(row, _txtCraft->getColor());
 		}
+
 		row++;
 	}
 	if (scrl)
@@ -726,6 +730,17 @@ void SoldiersState::lstSoldiersMousePress(Action *action)
 		{
 			moveSoldierDown(action, row);
 		}
+	}
+}
+
+void SoldiersState::setListRowColor(size_t row, Uint8 color, const Soldier& soldier)
+{
+	_lstSoldiers->setRowColor(row, color);
+	if (_game->getSavedGame()->isManaUnlocked(_game->getMod()))
+	{
+		const auto missingManaColor = soldier.getMissingManaColorForState();
+		if (missingManaColor)
+			_lstSoldiers->setCellColor(row, 1, *missingManaColor);
 	}
 }
 
