@@ -31,7 +31,6 @@ class Window;
 class Text;
 class TextList;
 class ComboBox;
-class Base;
 class Soldier;
 struct SortFunctor;
 

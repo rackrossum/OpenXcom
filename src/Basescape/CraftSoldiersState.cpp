@@ -32,7 +32,6 @@
 #include "../Interface/Text.h"
 #include "../Interface/TextList.h"
 #include "../Menu/ErrorMessageState.h"
-#include "../Savegame/Base.h"
 #include "../Savegame/Soldier.h"
 #include "../Savegame/Craft.h"
 #include "../Savegame/SavedGame.h"

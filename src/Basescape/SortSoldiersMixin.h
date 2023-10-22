@@ -5,6 +5,7 @@
 #include "SoldierSortUtil.h"
 #include "../Engine/Options.h"
 #include "../Interface/ComboBox.h"
+#include "../Savegame/Base.h"
 
 namespace OpenXcom
 {
