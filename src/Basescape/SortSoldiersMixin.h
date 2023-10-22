@@ -136,7 +136,7 @@ namespace OpenXcom
 			}
 		}
 
-		void ChangeSorter(getStatFn_t& getter)
+		void ChangeDynSorter(getStatFn_t& getter)
 		{
 			const auto defaultSorter = static_cast<Options::OXCEN::DefaultSoldiersSorter>(Options::OXCEN::defaultSoldiersSorter);
 			if (defaultSorter == Options::OXCEN::DefaultSoldiersSorter::Original)

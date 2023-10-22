@@ -185,6 +185,7 @@ SoldiersState::SoldiersState(Base *base) : SortSoldiersMixin(base), _origSoldier
 
 	// populate sort options
 	FillSorters(_sortFunctors, *_cbxSortBy, (ActionHandler)&SoldiersState::cbxSortByChange);
+	ChangeDynSorter(_dynGetter);
 
 	//_lstSoldiers->setArrowColumn(188, ARROW_VERTICAL);
 	_lstSoldiers->setColumns(3, 106, 98, 76);

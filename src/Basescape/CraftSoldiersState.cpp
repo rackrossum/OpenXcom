@@ -120,6 +120,7 @@ CraftSoldiersState::CraftSoldiersState(Base *base, size_t craft)
 
 	// populate sort options
 	FillSorters(_sortFunctors, *_cbxSortBy, (ActionHandler)&CraftSoldiersState::cbxSortByChange);
+	ChangeDynSorter(_dynGetter);
 
 	_lstSoldiers->setArrowColumn(188, ARROW_VERTICAL);
 	_lstSoldiers->setColumns(3, 106, 98, 76);
