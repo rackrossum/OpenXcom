@@ -1150,6 +1150,8 @@ std::optional<Uint8> Soldier::getMissingManaColorForState() const
 	for (auto i = 0; i < partions; ++i)
 		if (missingManaPercentage < (i + 1) * 10)
 			return Palette::blockOffset(paletteBlock) + partions * 2 - 2 * i;
+
+	return {};
 }
 
 /**
