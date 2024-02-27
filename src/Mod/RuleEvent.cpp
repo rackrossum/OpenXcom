@@ -21,7 +21,9 @@
 namespace OpenXcom
 {
 
-RuleEvent::RuleEvent(const std::string &name) : _name(name), _background("BACK13.SCR"), _city(false), _points(0), _funds(0), _spawnedPersons(0), _timer(30), _timerRandom(0)
+RuleEvent::RuleEvent(const std::string &name) :
+	_name(name), _background("BACK13.SCR"), _alignBottom(false),
+	_city(false), _points(0), _funds(0), _spawnedPersons(0), _timer(30), _timerRandom(0)
 {
 }
 
@@ -37,12 +39,14 @@ void RuleEvent::load(const YAML::Node &node)
 	}
 
 	_description = node["description"].as<std::string>(_description);
+	_alignBottom = node["alignBottom"].as<bool>(_alignBottom);
 	_background = node["background"].as<std::string>(_background);
 	_music = node["music"].as<std::string>(_music);
 	_regionList = node["regionList"].as<std::vector<std::string> >(_regionList);
 	_city = node["city"].as<bool>(_city);
 	_points = node["points"].as<int>(_points);
 	_funds = node["funds"].as<int>(_funds);
+	_spawnedCraftType = node["spawnedCraftType"].as<std::string>(_spawnedCraftType);
 	_spawnedPersons = node["spawnedPersons"].as<int>(_spawnedPersons);
 	_spawnedPersonType = node["spawnedPersonType"].as<std::string>(_spawnedPersonType);
 	_spawnedPersonName = node["spawnedPersonName"].as<std::string>(_spawnedPersonName);

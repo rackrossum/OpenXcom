@@ -71,6 +71,12 @@ void Production::setTimeSpent (int done)
 	_timeSpent = done;
 }
 
+bool Production::isQueuedOnly() const
+{
+	// no progress made yet and nobody assigned
+	return (getTimeSpent() == 0 && getAssignedEngineers() == 0);
+}
+
 int Production::getAssignedEngineers() const
 {
 	return _engineers;
@@ -148,7 +154,7 @@ productionProgress_e Production::step(Base * b, SavedGame * g, const Mod *m, Lan
 			{
 				Craft *craft = new Craft(ruleCraft, b, g->getId(ruleCraft->getType()));
 				craft->initFixedWeapons(m);
-				craft->setStatus("STR_REFUELLING");
+				craft->checkup();
 				b->getCrafts()->push_back(craft);
 			}
 			else
@@ -163,7 +169,7 @@ productionProgress_e Production::step(Base * b, SavedGame * g, const Mod *m, Lan
 					}
 					else
 					{
-						b->getStorageItems()->addItem(i.first->getType(), i.second);
+						b->getStorageItems()->addItem(i.first, i.second);
 						if (!_rules->getRandomProducedItems().empty())
 						{
 							_randomProductionInfo[i.first->getType()] += i.second;
@@ -196,7 +202,7 @@ productionProgress_e Production::step(Base * b, SavedGame * g, const Mod *m, Lan
 					{
 						for (const auto& i : itemSet.second)
 						{
-							b->getStorageItems()->addItem(i.first->getType(), i.second);
+							b->getStorageItems()->addItem(i.first, i.second);
 							_randomProductionInfo[i.first->getType()] += i.second;
 							if (i.first->getBattleType() == BT_NONE)
 							{
@@ -318,7 +324,7 @@ void Production::refundItem(Base * b, SavedGame * g, const Mod *m) const
 	g->setFunds(g->getFunds() + _rules->getManufactureCost());
 	for (const auto& pair : _rules->getRequiredItems())
 	{
-		b->getStorageItems()->addItem(pair.first->getType(), pair.second);
+		b->getStorageItems()->addItem(pair.first, pair.second);
 	}
 	//for (const auto& pair : _rules->getRequiredCrafts())
 	//{

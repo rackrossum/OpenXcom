@@ -52,6 +52,8 @@ class MapScript;
 class RuleVideo;
 
 class Mod;
+class Position;
+class Tile;
 class BattleUnit;
 class BattleUnitVisibility;
 class BattleItem;
@@ -107,7 +109,7 @@ class ModScript
 		ReactionUnitParser(ScriptGlobal* shared, const std::string& name, Mod* mod);
 	};
 
-	struct VisibilityUnitParser : ScriptParserEvents<ScriptOutputArgs<int&, int, ScriptTag<BattleUnitVisibility>&>, const BattleUnit*, const BattleUnit*, int, int, int, int>
+	struct VisibilityUnitParser : ScriptParserEvents<ScriptOutputArgs<int&, int, ScriptTag<BattleUnitVisibility>&>, const BattleUnit*, const BattleUnit*, const Tile*, int, int, int, int, int, int, int>
 	{
 		VisibilityUnitParser(ScriptGlobal* shared, const std::string& name, Mod* mod);
 	};
@@ -182,6 +184,21 @@ class ModScript
 	{
 		SelectItemParser(ScriptGlobal* shared, const std::string& name, Mod* mod);
 	};
+
+
+	struct VaporParticleBaseParser : ScriptParser<ScriptOutputArgs<int&, Position&, Position&, Position&, int&, int&, int&, int>, const BattleItem*, const BattleItem*, int, int, int, Position, Position, Position, RNG::RandomState*>
+	{
+		VaporParticleBaseParser(ScriptGlobal* shared, const std::string& name, Mod* mod);
+	};
+	struct VaporParticleAmmoParser : VaporParticleBaseParser
+	{
+		VaporParticleAmmoParser(ScriptGlobal* shared, const std::string& name, Mod* mod);
+	};
+	struct VaporParticleWeaponParser : VaporParticleBaseParser
+	{
+		VaporParticleWeaponParser(ScriptGlobal* shared, const std::string& name, Mod* mod);
+	};
+
 
 	struct TryPsiAttackItemParser : ScriptParserEvents<ScriptOutputArgs<int&>, const BattleItem*, const BattleUnit*, const BattleUnit*, const RuleSkill*, int, int, int, RNG::RandomState*, int, int, const SavedBattleGame*>
 	{
@@ -329,6 +346,8 @@ public:
 
 	using RecolorItemSprite = MACRO_NAMED_SCRIPT("recolorItemSprite", RecolorItemParser);
 	using SelectItemSprite = MACRO_NAMED_SCRIPT("selectItemSprite", SelectItemParser);
+	using VaporParticleAmmo = MACRO_NAMED_SCRIPT("vaporParticleAmmo", VaporParticleAmmoParser);
+	using VaporParticleWeapon = MACRO_NAMED_SCRIPT("vaporParticleWeapon", VaporParticleWeaponParser);
 
 	using ReactionWeaponAction = MACRO_NAMED_SCRIPT("reactionWeaponAction", ReactionUnitParser);
 
@@ -437,6 +456,8 @@ public:
 	using BattleItemScripts = ScriptGroup<Mod,
 		RecolorItemSprite,
 		SelectItemSprite,
+		VaporParticleAmmo,
+		VaporParticleWeapon,
 
 		ReactionWeaponAction,
 

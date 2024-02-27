@@ -78,44 +78,6 @@ const std::string SavedGame::AUTOSAVE_GEOSCAPE = "_autogeo_.asav",
 namespace
 {
 
-struct findRuleResearch
-{
-	typedef ResearchProject* argument_type;
-	typedef bool result_type;
-
-	RuleResearch * _toFind;
-	findRuleResearch(RuleResearch * toFind);
-	bool operator()(const ResearchProject *r) const;
-};
-
-findRuleResearch::findRuleResearch(RuleResearch * toFind) : _toFind(toFind)
-{
-}
-
-bool findRuleResearch::operator()(const ResearchProject *r) const
-{
-	return _toFind == r->getRules();
-}
-
-struct equalProduction
-{
-	typedef Production* argument_type;
-	typedef bool result_type;
-
-	RuleManufacture * _item;
-	equalProduction(RuleManufacture * item);
-	bool operator()(const Production * p) const;
-};
-
-equalProduction::equalProduction(RuleManufacture * item) : _item(item)
-{
-}
-
-bool equalProduction::operator()(const Production * p) const
-{
-	return p->getRules() == _item;
-}
-
 bool researchLess(const RuleResearch *a, const RuleResearch *b)
 {
 	return std::less<const RuleResearch *>{}(a, b);
@@ -711,33 +673,13 @@ void SavedGame::load(const std::string &filename, Mod *mod, Language *lang)
 		{
 			for (YAML::const_iterator i = layout.begin(); i != layout.end(); ++i)
 			{
-				EquipmentLayoutItem *layoutItem = new EquipmentLayoutItem(*i);
-
-				// check if everything still exists (in case of mod upgrades)
-				bool error = false;
-				if (!mod->getInventory(layoutItem->getSlot()))
-					error = true;
-				if (!mod->getItem(layoutItem->getItemType()))
-					error = true;
-				for (int slot = 0; slot < RuleItem::AmmoSlotMax; ++slot)
+				try
 				{
-					if (layoutItem->getAmmoItemForSlot(slot) == "NONE" || mod->getItem(layoutItem->getAmmoItemForSlot(slot)))
-					{
-						// ok
-					}
-					else
-					{
-						error = true;
-						break;
-					}
+					_globalEquipmentLayout[j].push_back(new EquipmentLayoutItem(*i, mod));
 				}
-				if (!error)
+				catch (Exception& ex)
 				{
-					_globalEquipmentLayout[j].push_back(layoutItem);
-				}
-				else
-				{
-					delete layoutItem;
+					Log(LOG_ERROR) << "Error loading Layout: " << ex.what();
 				}
 			}
 		}
@@ -764,7 +706,7 @@ void SavedGame::load(const std::string &filename, Mod *mod, Language *lang)
 		std::string key = oss.str();
 		if (const YAML::Node &loadout = doc[key])
 		{
-			_globalCraftLoadout[j]->load(loadout);
+			_globalCraftLoadout[j]->load(loadout, mod);
 		}
 		std::ostringstream oss2;
 		oss2 << "globalCraftLoadoutName" << j;
@@ -1833,14 +1775,22 @@ void SavedGame::getAvailableResearchProjects(std::vector<RuleResearch *> &projec
 		if (base)
 		{
 			// Check if this topic is already being researched in the given base
-			const std::vector<ResearchProject *> & baseResearchProjects = base->getResearch();
-			if (std::find_if(baseResearchProjects.begin(), baseResearchProjects.end(), findRuleResearch(research)) != baseResearchProjects.end())
+			bool found = false;
+			for (auto* ongoing : base->getResearch())
+			{
+				if (ongoing->getRules() == research)
+				{
+					found = true;
+					break;
+				}
+			}
+			if (found)
 			{
 				continue;
 			}
 
 			// Check for needed item in the given base
-			if (research->needItem() && base->getStorageItems()->getItem(research->getName()) == 0)
+			if (research->needItem() && base->getStorageItems()->getItem(research->getNeededItem()) == 0)
 			{
 				continue;
 			}
@@ -1906,7 +1856,16 @@ void SavedGame::getAvailableProductions (std::vector<RuleManufacture *> & produc
 		{
 			continue;
 		}
-		if (std::find_if (baseProductions.begin(), baseProductions.end(), equalProduction(m)) != baseProductions.end())
+		bool found = false;
+		for (auto* ongoing : baseProductions)
+		{
+			if (ongoing->getRules() == m)
+			{
+				found = true;
+				break;
+			}
+		}
+		if (found)
 		{
 			continue;
 		}
@@ -1961,9 +1920,15 @@ void SavedGame::getDependableManufacture (std::vector<RuleManufacture *> & depen
  */
 void SavedGame::getAvailableTransformations (std::vector<RuleSoldierTransformation *> & transformations, const Mod * mod, Base * base) const
 {
+	auto& list = mod->getSoldierTransformationList();
+	if (list.empty())
+	{
+		return;
+	}
+
 	RuleBaseFacilityFunctions baseFunc = base->getProvidedBaseFunc({});
 
-	for (const auto& transformType : mod->getSoldierTransformationList())
+	for (const auto& transformType : list)
 	{
 		RuleSoldierTransformation *m = mod->getSoldierTransformation(transformType);
 		if (!isResearched(m->getRequiredResearch()))
@@ -2075,21 +2040,18 @@ int SavedGame::getManufactureRuleStatus(const std::string &manufactureRule)
 }
 
 /**
- * Is the research new?
+ * Gets the status of a research rule.
  * @param researchRule Research rule ID.
- * @return True, if the research rule status is new.
+ * @return Status (0=new, 1=normal, 2=disabled, 3=hidden).
  */
-bool SavedGame::isResearchRuleStatusNew(const std::string &researchRule) const
+int SavedGame::getResearchRuleStatus(const std::string &researchRule) const
 {
 	auto it = _researchRuleStatus.find(researchRule);
 	if (it != _researchRuleStatus.end())
 	{
-		if (it->second != RuleResearch::RESEARCH_STATUS_NEW)
-		{
-			return false;
-		}
+		return it->second;
 	}
-	return true; // no status = new
+	return RuleResearch::RESEARCH_STATUS_NEW; // no status = new
 }
 
 /**
@@ -2227,25 +2189,17 @@ bool SavedGame::isResearched(const std::vector<const RuleResearch *> &research, 
 		return true;
 	if (considerDebugMode && _debug)
 		return true;
-	std::vector<const RuleResearch *> matches = research;
-	if (skipDisabled)
+
+	for (const auto* res : research)
 	{
-		// ignore all disabled topics (as if they didn't exist)
-		for (auto iter = matches.begin(); iter != matches.end();)
+		if (skipDisabled)
 		{
-			if (isResearchRuleStatusDisabled((*iter)->getName()))
+			// ignore all disabled topics (as if they didn't exist)
+			if (isResearchRuleStatusDisabled(res->getName()))
 			{
-				iter = matches.erase(iter);
-			}
-			else
-			{
-				++iter;
+				continue;
 			}
 		}
-	}
-
-	for (const auto* res : matches)
-	{
 		if (!haveReserchVector(_discovered, res))
 		{
 			return false;
@@ -2605,23 +2559,6 @@ void SavedGame::setWarned(bool warned)
 	_warned = warned;
 }
 
-/** @brief Check if a point is contained in a region.
- * This function object checks if a point is contained inside a region.
- */
-class ContainsPoint
-{
-	typedef const Region* argument_type;
-	typedef bool result_type;
-
-public:
-	/// Remember the coordinates.
-	ContainsPoint(double lon, double lat) : _lon(lon), _lat(lat) { /* Empty by design. */ }
-	/// Check is the region contains the stored point.
-	bool operator()(const Region *region) const { return region->getRules()->insideRegion(_lon, _lat); }
-private:
-	double _lon, _lat;
-};
-
 /**
  * Find the region containing this location.
  * @param lon The longitude.
@@ -2630,10 +2567,18 @@ private:
  */
 Region *SavedGame::locateRegion(double lon, double lat) const
 {
-	auto found = std::find_if (_regions.begin(), _regions.end(), ContainsPoint(lon, lat));
-	if (found != _regions.end())
+	Region* found = nullptr;
+	for (auto* region : _regions)
 	{
-		return *found;
+		if (region->getRules()->insideRegion(lon, lat))
+		{
+			found = region;
+			break;
+		}
+	}
+	if (found)
+	{
+		return found;
 	}
 	Log(LOG_ERROR) << "Failed to find a region at location [" << lon << ", " << lat << "].";
 	return 0;
@@ -2649,23 +2594,6 @@ Region *SavedGame::locateRegion(const Target &target) const
 	return locateRegion(target.getLongitude(), target.getLatitude());
 }
 
-/** @brief Check if a point is contained in a country.
- * This function object checks if a point is contained inside a country.
- */
-class CountryContainsPoint
-{
-	typedef const Country* argument_type;
-	typedef bool result_type;
-
-public:
-	/// Remember the coordinates.
-	CountryContainsPoint(double lon, double lat) : _lon(lon), _lat(lat) { /* Empty by design. */ }
-	/// Check if the country contains the stored point.
-	bool operator()(const Country* country) const { return country->getRules()->insideCountry(_lon, _lat); }
-private:
-	double _lon, _lat;
-};
-
 /**
  * Find the country containing this location.
  * @param lon The longitude.
@@ -2674,10 +2602,18 @@ private:
  */
 Country* SavedGame::locateCountry(double lon, double lat) const
 {
-	auto found = std::find_if(_countries.begin(), _countries.end(), CountryContainsPoint(lon, lat));
-	if (found != _countries.end())
+	Country* found = nullptr;
+	for (auto* country : _countries)
 	{
-		return *found;
+		if (country->getRules()->insideCountry(lon, lat))
+		{
+			found = country;
+			break;
+		}
+	}
+	if (found)
+	{
+		return found;
 	}
 	//Log(LOG_DEBUG) << "Failed to find a country at location [" << lon << ", " << lat << "].";
 	return 0;
@@ -3401,7 +3337,7 @@ void SavedGame::handlePrimaryResearchSideEffects(const std::vector<const RuleRes
 		if (spawnedItem)
 		{
 			Transfer* t = new Transfer(1);
-			t->setItems(myResearchRule->getSpawnedItem(), std::max(1, myResearchRule->getSpawnedItemCount()));
+			t->setItems(spawnedItem, std::max(1, myResearchRule->getSpawnedItemCount()));
 			base->getTransfers()->push_back(t);
 		}
 		for (const auto& spawnedItemName2 : myResearchRule->getSpawnedItemList())
@@ -3410,7 +3346,7 @@ void SavedGame::handlePrimaryResearchSideEffects(const std::vector<const RuleRes
 			if (spawnedItem2)
 			{
 				Transfer* t = new Transfer(1);
-				t->setItems(spawnedItemName2);
+				t->setItems(spawnedItem2);
 				base->getTransfers()->push_back(t);
 			}
 		}
@@ -3477,6 +3413,18 @@ void randomRangeScript(RNG::RandomState* rs, int& val, int min, int max)
 	if (rs && max >= min)
 	{
 		val = rs->generate(min, max);
+	}
+	else
+	{
+		val = 0;
+	}
+}
+
+void randomRangeSymmetricScript(RNG::RandomState* rs, int& val, int max)
+{
+	if (rs && max >= 0)
+	{
+		val = rs->generate(-max, max);
 	}
 	else
 	{
@@ -3621,6 +3569,7 @@ void SavedGame::ScriptRegister(ScriptParserBase* parser)
 
 		rs.add<&randomChanceScript>("randomChance", "Change value from range 0-100 to 0-1 based on probability");
 		rs.add<&randomRangeScript>("randomRange", "Return random value from defined range");
+		rs.add<&randomRangeSymmetricScript>("randomRangeSymmetric", "Return random value from negative to positive of given max value");
 
 		rs.addDebugDisplay<&debugDisplayScript>();
 	}

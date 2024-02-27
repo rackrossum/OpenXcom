@@ -1067,12 +1067,18 @@ void TileEngine::calculateUnitLighting(MapSubset gs)
 		}
 
 		int currLight = 0;
-
-		// add lighting of soldiers
-		int personalLight = useIntNullable(unit->getArmor()->getPersonalLight(), (unit->getFaction() == FACTION_PLAYER) ? 15 : 0);
-		if (personalLight && (_personalLighting || unit->getFaction() != FACTION_PLAYER))
+		// add lighting of unit
+		if (unit->getFaction() == FACTION_PLAYER)
 		{
-			currLight = std::max(currLight, personalLight);
+			currLight = std::max(currLight, _personalLighting ? unit->getArmor()->getPersonalLightFriend() : 0);
+		}
+		else if (unit->getFaction() == FACTION_HOSTILE)
+		{
+			currLight = std::max(currLight, unit->getArmor()->getPersonalLightHostile());
+		}
+		else if (unit->getFaction() == FACTION_NEUTRAL)
+		{
+			currLight = std::max(currLight, unit->getArmor()->getPersonalLightNeutral());
 		}
 
 		const BattleItem *handWeapons[] = { unit->getLeftHandWeapon(), unit->getRightHandWeapon() };
@@ -1698,6 +1704,136 @@ Position TileEngine::getSightOriginVoxel(BattleUnit *currentUnit)
 	return originVoxel;
 }
 
+namespace
+{
+
+/**
+ * Calculate max visible distance.
+ * @param te TileEngine
+ * @param tile Target tile that is look at
+ * @param currentUnit Unit that look on tile or unit
+ * @param targetUnit Unit that is look at
+ * @return Tuple of get<0>: effective visible distance that consider camouflage and shade, get<1>: max unit visibility distance in tiles independent of target darkness
+ */
+std::tuple<int, int> getVisibleDistanceMaxHelper(TileEngine* te, const Tile* tile, const BattleUnit* currentUnit, const BattleUnit *targetUnit)
+{
+	bool targetIsDark = tile->getShade() > te->getMaxDarknessToSeeUnits();
+	bool targetOnFire = (targetUnit && targetUnit->getFire() > 0);
+	if (targetOnFire)
+	{
+		// Note: fire cancels enemy's camouflage
+		targetUnit = nullptr;
+		targetIsDark = false;
+	}
+
+	const int viewDistanceAtDarkTiles = currentUnit->getMaxViewDistanceAtDark(targetUnit);
+	const int viewDistanceAtDayTiles = currentUnit->getMaxViewDistanceAtDay(targetUnit);
+
+	// global max distance, independent of unit
+	const int visibleDistanceGlobalMaxVoxel = te->getMaxVoxelViewDistance();
+	// max distance, affected by target unit too
+	int visibleDistanceMaxVoxel = visibleDistanceGlobalMaxVoxel;
+	// unit max distance, mix of dark and day range
+	int visibleDistanceUnitMaxTile = std::min(
+		te->getMaxViewDistance(),
+		std::max(
+			viewDistanceAtDarkTiles,
+			viewDistanceAtDayTiles
+		)
+	);
+
+	// during dark aliens can see 20 tiles, xcom can see 9 by default... unless overridden by armor
+	if (targetIsDark)
+	{
+		visibleDistanceMaxVoxel = std::min(
+			visibleDistanceGlobalMaxVoxel,
+			viewDistanceAtDarkTiles * Position::TileXY
+		);
+	}
+	// during day (or if enough other light) both see 20 tiles ... unless overridden by armor
+	else
+	{
+		visibleDistanceMaxVoxel = std::min(
+			visibleDistanceGlobalMaxVoxel,
+			viewDistanceAtDayTiles * Position::TileXY
+		);
+	}
+
+	// small buffer that allow for very short visibility distance still work in smoke or some diagonal directions still be visible
+	visibleDistanceMaxVoxel += Position::TileXY / 4;
+
+	return std::make_tuple(visibleDistanceMaxVoxel, visibleDistanceUnitMaxTile);
+}
+
+/**
+ * Get data for given trajectory
+ * @param te TileEngine
+ * @param save SavedBattleGame for
+ * @param currentUnit Unit that look on tile or unit
+ * @param originVoxel Start trajectory voxel
+ * @param scanVoxel End trajectory voxel
+ * @return Tuple of get<0>: visibleDistanceVoxels, get<1>: densityOfSmoke, get<2>: densityOfFire
+ */
+std::tuple<int, int, int, int, int> getTrajectoryDataHelper(TileEngine* te, const SavedBattleGame* save, const BattleUnit* currentUnit, Position originVoxel, Position scanVoxel)
+{
+	std::vector<Position> _trajectory;
+
+	// predict used distance to avoid multiple allocations
+	Position diff = (originVoxel - scanVoxel);
+	_trajectory.reserve(std::max({std::abs(diff.x), std::abs(diff.y), std::abs(diff.z)}) + 1);
+
+	// now check if we really see it taking into account smoke tiles
+	// initial smoke "density" of a smoke grenade is around 15 per tile
+	// we do density/3 to get the decay of visibility
+	// so in fresh smoke we should only have 4 tiles of visibility
+	// this is traced in voxel space, with smoke affecting visibility every step of the way
+	te->calculateLineVoxel(originVoxel, scanVoxel, true, &_trajectory, const_cast<BattleUnit*>(currentUnit));
+	const int trajectorySize = _trajectory.size();
+	float densityOfSmoke = 0;
+	float densityOfFire = 0;
+	float densityOfSmokeNearUnit = 0;
+	float densityOfFireeNearUnit = 0;
+	float visibleDistanceVoxels = 0;
+	Position trackTile(-1, -1, -1);
+	const Tile *t = 0;
+
+	for (int i = 0; i < trajectorySize; i++)
+	{
+		auto posTile =  _trajectory.at(i).toTile();
+		auto step = te->trajectoryStepSize(_trajectory, i);
+		if (trackTile != posTile)
+		{
+			trackTile = posTile;
+			t = save->getTile(trackTile);
+		}
+		visibleDistanceVoxels += step;
+		if (t->getFire() == 0)
+		{
+			densityOfSmoke += step * t->getSmoke();
+		}
+		else
+		{
+			densityOfFire += step * t->getSmoke(); // this boost fire blocking visibility for thermo vision as usually smoke value is bigger
+		}
+		if (visibleDistanceVoxels < Position::TileXY*2)
+		{
+			if (t->getFire() == 0)
+			{
+				densityOfSmokeNearUnit += step * t->getSmoke();
+			}
+			else
+			{
+				densityOfFireeNearUnit += step * t->getSmoke(); // this boost fire blocking visibility for thermo vision as usually smoke value is bigger
+			}
+		}
+	}
+
+	return std::make_tuple((int)visibleDistanceVoxels, (int)densityOfSmoke, (int)densityOfFire, (int)densityOfSmokeNearUnit, (int)densityOfFireeNearUnit);
+}
+
+}
+
+
 /**
  * Checks for an opposing unit on this tile.
  * @param currentUnit The watcher.
@@ -1742,74 +1878,29 @@ bool TileEngine::visible(BattleUnit *currentUnit, Tile *tile)
 		}
 	}
 
-	int visibleDistanceMaxVoxel = getMaxVoxelViewDistance();
-	// during dark aliens can see 20 tiles, xcom can see 9 by default... unless overridden by armor
-	if (tile->getShade() > getMaxDarknessToSeeUnits() && tile->getUnit()->getFire() == 0)
-	{
-		visibleDistanceMaxVoxel = std::min(visibleDistanceMaxVoxel, currentUnit->getMaxViewDistanceAtDark(tile->getUnit()->getArmor()) * 16);
-	}
-	// during day (or if enough other light) both see 20 tiles ... unless overridden by armor
-	else
-	{
-		// Note: fire cancels enemy's camouflage
-		visibleDistanceMaxVoxel = std::min(
-			visibleDistanceMaxVoxel,
-			currentUnit->getMaxViewDistanceAtDay(tile->getUnit()->getFire() > 0 ? 0 : tile->getUnit()->getArmor()) * 16
-		);
-	}
-
-	// oxce 3.3 workaround, remove when fixed? http://openxcom.org/forum/index.php/topic,4822.msg73841.html#msg73841
-	if (currentDistanceSq > ((visibleDistanceMaxVoxel / 16) * (visibleDistanceMaxVoxel / 16)))
-	{
-		return false;
-	}
+	const auto [visibleDistanceMaxVoxel, visibleDistanceUnitMaxTile] = getVisibleDistanceMaxHelper(this, tile, currentUnit, tile->getUnit());
 
 	Position originVoxel = getSightOriginVoxel(currentUnit);
 
 	Position scanVoxel;
-	std::vector<Position> _trajectory;
 	bool unitSeen = canTargetUnit(&originVoxel, tile, &scanVoxel, currentUnit, false);
 
 	// heat vision 100% = smoke effectiveness 0%
 	int smokeDensityFactor = 100 - currentUnit->getArmor()->getHeatVision();
+	// heat vision should be blind by looking directly through fire
+	int fireDensityFactor = currentUnit->getArmor()->getHeatVision();
 
 	if (unitSeen)
 	{
-		// now check if we really see it taking into account smoke tiles
-		// initial smoke "density" of a smoke grenade is around 15 per tile
-		// we do density/3 to get the decay of visibility
-		// so in fresh smoke we should only have 4 tiles of visibility
-		// this is traced in voxel space, with smoke affecting visibility every step of the way
-		_trajectory.clear();
-		calculateLineVoxel(originVoxel, scanVoxel, true, &_trajectory, currentUnit);
-		int visibleDistanceVoxels = _trajectory.size();
-		int densityOfSmoke = 0;
-		int densityOfFire = 0;
-		Position voxelToTile(16, 16, 24);
-		Position trackTile(-1, -1, -1);
-		Tile *t = 0;
+		const auto [visibleDistanceVoxels, densityOfSmoke, densityOfFire, densityOfSmokeNearUnit, densityOfFireeNearUnit] = getTrajectoryDataHelper(this, _save, currentUnit, originVoxel, scanVoxel);
 
-		for (int i = 0; i < visibleDistanceVoxels; i++)
-		{
-			_trajectory.at(i) /= voxelToTile;
-			if (trackTile != _trajectory.at(i))
-			{
-				trackTile = _trajectory.at(i);
-				t = _save->getTile(trackTile);
-			}
-			if (t->getFire() == 0)
-			{
-				densityOfSmoke += t->getSmoke();
-			}
-			else
-			{
-				densityOfFire += t->getFire();
-			}
-		}
-		visibleDistanceMaxVoxel = getMaxVoxelViewDistance(); // reset again (because of smoke formula)
-		int visibilityQuality = visibleDistanceMaxVoxel - visibleDistanceVoxels - densityOfSmoke * smokeDensityFactor * getMaxViewDistance()/(3 * 20 * 100);
+		// 3  - coefficient of calculation (see getTrajectoryDataHelper).
+		// 20 - maximum view distance in vanilla Xcom.
+		// 100 - % for smokeDensityFactor.
+		// Even if MaxViewDistance will be increased via ruleset, smoke will keep effect.
+		int visibilityQuality = visibleDistanceMaxVoxel - visibleDistanceVoxels - ((densityOfSmoke - densityOfSmokeNearUnit / 2) * smokeDensityFactor + (densityOfFire - densityOfFireeNearUnit / 2) * fireDensityFactor) * visibleDistanceUnitMaxTile/(3 * 20 * 100);
 		ModScript::VisibilityUnit::Output arg{ visibilityQuality, visibilityQuality, ScriptTag<BattleUnitVisibility>::getNullTag() };
-		ModScript::VisibilityUnit::Worker worker{ currentUnit, tile->getUnit(), visibleDistanceVoxels, visibleDistanceMaxVoxel, densityOfSmoke * smokeDensityFactor / 100, densityOfFire };
+		ModScript::VisibilityUnit::Worker worker{ currentUnit, tile->getUnit(), tile, visibleDistanceVoxels, visibleDistanceMaxVoxel, visibleDistanceUnitMaxTile, densityOfSmoke, densityOfFire, densityOfSmokeNearUnit, densityOfFireeNearUnit };
 		worker.execute(currentUnit->getArmor()->getScript<ModScript::VisibilityUnit>(), arg);
 		unitSeen = 0 < arg.getFirst();
 	}
@@ -1818,12 +1909,12 @@ bool TileEngine::visible(BattleUnit *currentUnit, Tile *tile)
 
 /**
  * Checks to see if a tile is visible through darkness, obstacles and smoke.
- * Note: psi vision, heat vision, camouflage/anti-camouflage and Y-scripts are intentionally removed.
+ * Note: psi vision, camouflage/anti-camouflage are intentionally removed.
  * @param action Current battle action.
  * @param tile The tile to check for.
  * @return True if visible.
  */
-bool TileEngine::isTileInLOS(BattleAction *action, Tile *tile)
+bool TileEngine::isTileInLOS(BattleAction *action, Tile *tile, bool drawing)
 {
 	// if there is no tile, we can't see it
 	if (!tile)
@@ -1840,22 +1931,7 @@ bool TileEngine::isTileInLOS(BattleAction *action, Tile *tile)
 		return false;
 	}
 
-	// environmental (light/darkness) visibility
-	int visibleDistanceMaxVoxel = getMaxVoxelViewDistance();
-	if (tile->getShade() > getMaxDarknessToSeeUnits())
-	{
-		// in darkness aliens can see 20 tiles, xcom can see 9 by default... unless overridden by armor
-		visibleDistanceMaxVoxel = std::min(visibleDistanceMaxVoxel, currentUnit->getMaxViewDistanceAtDark(0) * 16);
-	}
-	else
-	{
-		// during day (or if enough other light) both see 20 tiles ... unless overridden by armor
-		visibleDistanceMaxVoxel = std::min(visibleDistanceMaxVoxel, currentUnit->getMaxViewDistanceAtDay(0) * 16);
-	}
-	if (currentDistanceSq > ((visibleDistanceMaxVoxel / 16) * (visibleDistanceMaxVoxel / 16)))
-	{
-		return false;
-	}
+	const auto [visibleDistanceMaxVoxel, visibleDistanceUnitMaxTile] = getVisibleDistanceMaxHelper(this, tile, currentUnit, /*targetUnit*/ nullptr);
 
 	// We MUST build a temp action, because current action doesn't yet have updated target (when only aiming)
 	BattleAction tempAction;
@@ -1970,7 +2046,7 @@ bool TileEngine::isTileInLOS(BattleAction *action, Tile *tile)
 				else if (test == V_UNIT)
 				{
 					BattleUnit *hitUnit = _save->getTile(hitPos)->getUnit();
-					BattleUnit *targetUnit = tile->getUnit();
+					BattleUnit *targetUnit = drawing ? tile->getUnit() : tile->getOverlappingUnit(_save);
 					if (hitUnit != targetUnit)
 					{
 						seen = false;
@@ -1986,42 +2062,25 @@ bool TileEngine::isTileInLOS(BattleAction *action, Tile *tile)
 
 	// LOS check uses sight origin voxel (LOF check uses origin voxel)
 	originVoxel = getSightOriginVoxel(currentUnit);
+
+	// heat vision 100% = smoke effectiveness 0%
+	int smokeDensityFactor = 100 - currentUnit->getArmor()->getHeatVision();
+	// heat vision should be blind by looking directly through fire
+	int fireDensityFactor = currentUnit->getArmor()->getHeatVision();
+
 	if (seen)
 	{
-		// now check if we really see it taking into account smoke tiles
-		// initial smoke "density" of a smoke grenade is around 15 per tile
-		// we do density/3 to get the decay of visibility
-		// so in fresh smoke we should only have 4 tiles of visibility
-		// this is traced in voxel space, with smoke affecting visibility every step of the way
-		_trajectory.clear();
-		calculateLineVoxel(originVoxel, scanVoxel, true, &_trajectory, currentUnit);
-		int visibleDistanceVoxels = _trajectory.size();
-		int densityOfSmoke = 0;
-		int densityOfFire = 0;
-		Position voxelToTile(16, 16, 24);
-		Position trackTile(-1, -1, -1);
-		Tile *t = 0;
+		const auto [visibleDistanceVoxels, densityOfSmoke, densityOfFire, densityOfSmokeNearUnit, densityOfFireeNearUnit] = getTrajectoryDataHelper(this, _save, currentUnit, originVoxel, scanVoxel);
 
-		for (int i = 0; i < visibleDistanceVoxels; i++)
-		{
-			_trajectory.at(i) /= voxelToTile;
-			if (trackTile != _trajectory.at(i))
-			{
-				trackTile = _trajectory.at(i);
-				t = _save->getTile(trackTile);
-			}
-			if (t->getFire() == 0)
-			{
-				densityOfSmoke += t->getSmoke();
-			}
-			else
-			{
-				densityOfFire += t->getFire();
-			}
-		}
-		visibleDistanceMaxVoxel = getMaxVoxelViewDistance(); // reset again (because of smoke formula)
-		int visibilityQuality = visibleDistanceMaxVoxel - visibleDistanceVoxels - densityOfSmoke * getMaxViewDistance()/(3 * 20);
-		seen = 0 < visibilityQuality;
+		// 3  - coefficient of calculation (see getTrajectoryDataHelper).
+		// 20 - maximum view distance in vanilla Xcom.
+		// 100 - % for smokeDensityFactor.
+		// Even if MaxViewDistance will be increased via ruleset, smoke will keep effect.
+		int visibilityQuality = visibleDistanceMaxVoxel - visibleDistanceVoxels - ((densityOfSmoke - densityOfSmokeNearUnit / 2) * smokeDensityFactor + (densityOfFire - densityOfFireeNearUnit / 2) * fireDensityFactor) * visibleDistanceUnitMaxTile/(3 * 20 * 100);
+		ModScript::VisibilityUnit::Output arg{ visibilityQuality, visibilityQuality, ScriptTag<BattleUnitVisibility>::getNullTag() };
+		ModScript::VisibilityUnit::Worker worker{ currentUnit, /*targetUnit*/ nullptr, tile, visibleDistanceVoxels, visibleDistanceMaxVoxel, visibleDistanceUnitMaxTile, densityOfSmoke, densityOfFire, densityOfSmokeNearUnit, densityOfFireeNearUnit };
+		worker.execute(currentUnit->getArmor()->getScript<ModScript::VisibilityUnit>(), arg);
+		seen = 0 < arg.getFirst();
 	}
 	return seen;
 }
@@ -2649,55 +2708,89 @@ TileEngine::ReactionScore TileEngine::determineReactionType(BattleUnit *unit, Ba
 		re.reactionReduction = 1.0 * BattleActionCost(type, re.unit, weapon).Time * re.unit->getBaseStats()->reactions / re.unit->getBaseStats()->tu;
 	};
 
-	// prioritize melee
+	std::vector<BattleItem*> reactionWeapons;
+	// 1. first try the preferred weapon (player units only... to prevent abuse)
+	bool isPlayer = (unit->getFaction() == FACTION_PLAYER);
+	if (isPlayer)
+	{
+		if (BattleItem* preferredWeapon = unit->getWeaponForReactions())
+		{
+			reactionWeapons.push_back(preferredWeapon);
+		}
+	}
+	// 2. then prioritize melee
+	if (BattleItem* meleeWeapon = unit->getUtilityWeapon(BT_MELEE))
+	{
+		reactionWeapons.push_back(meleeWeapon);
+	}
+	// 3. then the rest (AI: quickest weapon, Player: last selected/main weapon)
+	if (BattleItem* otherWeapon = unit->getMainHandWeapon(!isPlayer, true))
+	{
+		reactionWeapons.push_back(otherWeapon);
+	}
+
 	int tempDirection = unit->getDirection();
 	if (Mod::EXTENDED_MELEE_REACTIONS == 2)
 	{
 		// temporarily face the target to allow melee reactions when attacked from any side, not just from the front
 		tempDirection = getDirectionTo(unit->getPosition(), target->getPosition());
 	}
-	BattleItem *meleeWeapon = unit->getWeaponForReactions(true);
-	if (!meleeWeapon)
+
+	BattleItem* disabledLeft = nullptr;
+	BattleItem* disabledRight = nullptr;
+	// player units only... to prevent abuse
+	if (isPlayer)
 	{
-		meleeWeapon = unit->getUtilityWeapon(BT_MELEE);
-	}
-	// has a melee weapon and is in melee range
-	if (_save->canUseWeapon(meleeWeapon, unit, false, BA_HIT) &&
-		validMeleeRange(unit, target, tempDirection) &&
-		meleeWeapon->getAmmoForAction(BA_HIT) &&
-		BattleActionCost(BA_HIT, unit, meleeWeapon).haveTU())
-	{
-		setReaction(reaction, BA_HIT, meleeWeapon);
-		return reaction;
+		BattleItem* leftHandItem = unit->getLeftHandWeapon();
+		BattleItem* rightHandItem = unit->getRightHandWeapon();
+		BattleItem* emptyHandItem = nullptr;
+		if ((!leftHandItem && unit->isLeftHandDisabledForReactions()) || (!rightHandItem && unit->isRightHandDisabledForReactions()))
+		{
+			auto typesToCheck = { BT_MELEE, BT_PSIAMP, BT_FIREARM/*, BT_MEDIKIT, BT_SCANNER, BT_MINDPROBE*/ };
+			for (auto& type : typesToCheck)
+			{
+				emptyHandItem = unit->getSpecialWeapon(type);
+				if (emptyHandItem && emptyHandItem->getRules()->isSpecialUsingEmptyHand())
+				{
+					break;
+				}
+				emptyHandItem = nullptr;
+			}
+		}
+		disabledLeft = unit->isLeftHandDisabledForReactions() ? (leftHandItem ? leftHandItem : emptyHandItem) : nullptr;
+		disabledRight = unit->isRightHandDisabledForReactions() ? (rightHandItem ? rightHandItem : emptyHandItem) : nullptr;
 	}
 
-	// has a weapon
-	BattleItem *weapon = unit->getWeaponForReactions(false);
-	if (!weapon)
+	for (auto* weapon : reactionWeapons)
 	{
-		weapon = unit->getMainHandWeapon(unit->getFaction() != FACTION_PLAYER);
-	}
-	if (_save->canUseWeapon(weapon, unit, false, BA_HIT))
-	{
-		// has a weapon capable of melee and is in melee range
-		if (validMeleeRange(unit, target, tempDirection) &&
-			weapon->getAmmoForAction(BA_HIT) &&
-			BattleActionCost(BA_HIT, unit, weapon).haveTU())
+		if (weapon == disabledLeft || weapon == disabledRight)
 		{
-			setReaction(reaction, BA_HIT, weapon);
-			return reaction;
+			// the player doesn't want to react with this weapon
+			continue;
 		}
-	}
-	if (_save->canUseWeapon(weapon, unit, false, BA_SNAPSHOT))
-	{
-		// has a gun capable of snap shot with ammo
-		if (weapon->getRules()->getBattleType() == BT_FIREARM &&
-			!weapon->getRules()->isOutOfRange(unit->distance3dToUnitSq(target)) &&
-			weapon->getAmmoForAction(BA_SNAPSHOT) &&
-			BattleActionCost(BA_SNAPSHOT, unit, weapon).haveTU())
+
+		if (_save->canUseWeapon(weapon, unit, false, BA_HIT))
 		{
-			setReaction(reaction, BA_SNAPSHOT, weapon);
-			return reaction;
+			// has a weapon capable of melee and is in melee range
+			if (validMeleeRange(unit, target, tempDirection) &&
+				weapon->getAmmoForAction(BA_HIT) &&
+				BattleActionCost(BA_HIT, unit, weapon).haveTU())
+			{
+				setReaction(reaction, BA_HIT, weapon);
+				return reaction;
+			}
+		}
+		if (_save->canUseWeapon(weapon, unit, false, BA_SNAPSHOT))
+		{
+			// has a gun capable of snap shot with ammo
+			if (weapon->getRules()->getBattleType() == BT_FIREARM &&
+				!weapon->getRules()->isOutOfRange(unit->distance3dToUnitSq(target)) &&
+				weapon->getAmmoForAction(BA_SNAPSHOT) &&
+				BattleActionCost(BA_SNAPSHOT, unit, weapon).haveTU())
+			{
+				setReaction(reaction, BA_SNAPSHOT, weapon);
+				return reaction;
+			}
 		}
 	}
 
@@ -4688,9 +4781,21 @@ bool TileEngine::psiAttack(BattleActionAttack attack, BattleUnit *victim)
 				}
 			}
 			victim->setMindControllerId(attack.attacker->getId());
-			victim->convertToFaction(attack.attacker->getFaction());
-			calculateLighting(LL_UNITS, victim->getPosition());
-			calculateFOV(victim->getPosition()); //happens fairly rarely, so do a full recalc for units in range to handle the potential unit visible cache issues.
+			if (attack.weapon_item->getRules()->convertToCivilian() && victim->getOriginalFaction() == FACTION_HOSTILE)
+			{
+				victim->convertToFaction(FACTION_NEUTRAL);
+				if (victim->getAIModule())
+				{
+					// rewire them to attack hostiles
+					victim->getAIModule()->setTargetFaction(FACTION_HOSTILE);
+				}
+			}
+			else
+			{
+				victim->convertToFaction(attack.attacker->getFaction());
+				calculateLighting(LL_UNITS, victim->getPosition());
+				calculateFOV(victim->getPosition()); //happens fairly rarely, so do a full recalc for units in range to handle the potential unit visible cache issues.
+			}
 			victim->recoverTimeUnits();
 			victim->allowReselect();
 			victim->abortTurn(); // resets unit status to STANDING

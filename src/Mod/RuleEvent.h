@@ -35,8 +35,10 @@ class RuleEvent
 private:
 	std::string _name, _description, _background, _music;
 	std::vector<std::string> _regionList;
+	bool _alignBottom;
 	bool _city;
 	int _points, _funds;
+	std::string _spawnedCraftType;
 	int _spawnedPersons;
 	std::string _spawnedPersonType, _spawnedPersonName;
 	YAML::Node _spawnedSoldier;
@@ -58,6 +60,8 @@ public:
 	const std::string &getName() const { return _name; }
 	/// Gets the event's description.
 	const std::string &getDescription() const { return _description; }
+	/// Should the description be bottom aligned?
+	bool alignBottom() const { return _alignBottom; }
 	/// Gets the event's background sprite name.
 	const std::string &getBackground() const { return _background; }
 	/// Gets the event's music.
@@ -70,6 +74,9 @@ public:
 	int getPoints() const { return _points; }
 	/// Gets the amount of funds awarded when this event pops up.
 	int getFunds() const { return _funds; }
+
+	/// Gets the spawned craft type.
+	const std::string& getSpawnedCraftType() const { return _spawnedCraftType; }
 
 	/// Gets the number of spawned persons.
 	int getSpawnedPersons() const { return _spawnedPersons; }

@@ -142,7 +142,6 @@ CraftArmorState::CraftArmorState(Base *base, size_t craft) : _base(base), _craft
 	_cbxSortBy->onChange((ActionHandler)&CraftArmorState::cbxSortByChange);
 	_cbxSortBy->setText(tr("STR_SORT_BY"));
 
-	//_lstSoldiers->setArrowColumn(-1, ARROW_VERTICAL);
 	_lstSoldiers->setColumns(3, 106, 70, 104);
 	_lstSoldiers->setAlign(ALIGN_RIGHT, 3);
 	_lstSoldiers->setSelectable(true);
@@ -474,11 +473,20 @@ void CraftArmorState::lstSoldiersClick(Action *action)
 				else if (s->hasFullHealth())
 				{
 					int space = c->getSpaceAvailable();
-					if (c->validateAddingSoldier(space, s))
+					CraftPlacementErrors err = c->validateAddingSoldier(space, s);
+					if (err == CPE_None)
 					{
 						s->setCraftAndMoveEquipment(c, _base, _game->getSavedGame()->getMonthsPassed() == -1, true);
 						_lstSoldiers->setCellText(_lstSoldiers->getSelectedRow(), 1, c->getName(_game->getLanguage()));
 						_lstSoldiers->setRowColor(_lstSoldiers->getSelectedRow(), _lstSoldiers->getSecondaryColor());
+					}
+					else if (err == CPE_SoldierGroupNotAllowed)
+					{
+						_game->pushState(new ErrorMessageState(tr("STR_SOLDIER_GROUP_NOT_ALLOWED"), _palette, _game->getMod()->getInterface("soldierInfo")->getElement("errorMessage")->color, "BACK01.SCR", _game->getMod()->getInterface("soldierInfo")->getElement("errorPalette")->color));
+					}
+					else if (err == CPE_SoldierGroupNotSame)
+					{
+						_game->pushState(new ErrorMessageState(tr("STR_SOLDIER_GROUP_NOT_SAME"), _palette, _game->getMod()->getInterface("soldierInfo")->getElement("errorMessage")->color, "BACK01.SCR", _game->getMod()->getInterface("soldierInfo")->getElement("errorPalette")->color));
 					}
 					else if (space > 0)
 					{
