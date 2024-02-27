@@ -421,7 +421,9 @@ public:
 	static int SELL_PRICE_COEFFICIENT[5];
 	static int DIFFICULTY_BASED_RETAL_DELAY[5];
 	static int UNIT_RESPONSE_SOUNDS_FREQUENCY[4];
+	static int PEDIA_FACILITY_RENDER_PARAMETERS[4];
 	static bool EXTENDED_ITEM_RELOAD_COST;
+	static bool EXTENDED_INVENTORY_SLOT_SORTING;
 	static bool EXTENDED_RUNNING_COST;
 	static bool EXTENDED_HWP_LOAD_ORDER;
 	static int EXTENDED_MELEE_REACTIONS;
@@ -477,6 +479,10 @@ public:
 	Sound *getSoundByDepth(unsigned int depth, unsigned int sound) const;
 	/// Gets list of LUT data.
 	const std::vector<std::vector<Uint8> > *getLUTs() const;
+
+
+	/// Check for obsolete error based on year.
+	bool checkForObsoleteErrorByYear(const std::string &parent, const YAML::Node &node, const std::string &error,int year) const;
 
 	/// Check for error that we can ignore by user request.
 	bool checkForSoftError(bool check, const std::string &parent, const YAML::Node &node, const std::string &error, SeverityLevel level = LOG_WARNING) const

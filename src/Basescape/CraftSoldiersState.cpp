@@ -57,7 +57,7 @@ CraftSoldiersState::CraftSoldiersState(Base *base, size_t craft)
 {
 	bool hidePreview = _game->getSavedGame()->getMonthsPassed() == -1;
 	Craft *c = _base->getCrafts()->at(_craft);
-	if (c && !c->getRules()->getBattlescapeTerrainData())
+	if (c && !c->getRules()->isForNewBattle())
 	{
 		// no battlescape map available
 		hidePreview = true;
@@ -440,7 +440,8 @@ void CraftSoldiersState::lstSoldiersClick(Action *action)
 		else if (s->hasFullHealth())
 		{
 			int space = c->getSpaceAvailable();
-			if (c->validateAddingSoldier(space, s))
+			CraftPlacementErrors err = c->validateAddingSoldier(space, s);
+			if (err == CPE_None)
 			{
 				s->setCraftAndMoveEquipment(c, _base, _game->getSavedGame()->getMonthsPassed() == -1, true);
 				_lstSoldiers->setCellText(row, 2, c->getName(_game->getLanguage()));
@@ -448,6 +449,14 @@ void CraftSoldiersState::lstSoldiersClick(Action *action)
 
 				// update the label to indicate absence of a saved craft deployment
 				_btnPreview->setText(tr("STR_CRAFT_DEPLOYMENT_PREVIEW"));
+			}
+			else if (err == CPE_SoldierGroupNotAllowed)
+			{
+				_game->pushState(new ErrorMessageState(tr("STR_SOLDIER_GROUP_NOT_ALLOWED"), _palette, _game->getMod()->getInterface("soldierInfo")->getElement("errorMessage")->color, "BACK01.SCR", _game->getMod()->getInterface("soldierInfo")->getElement("errorPalette")->color));
+			}
+			else if (err == CPE_SoldierGroupNotSame)
+			{
+				_game->pushState(new ErrorMessageState(tr("STR_SOLDIER_GROUP_NOT_SAME"), _palette, _game->getMod()->getInterface("soldierInfo")->getElement("errorMessage")->color, "BACK01.SCR", _game->getMod()->getInterface("soldierInfo")->getElement("errorPalette")->color));
 			}
 			else if (space > 0)
 			{
@@ -461,7 +470,7 @@ void CraftSoldiersState::lstSoldiersClick(Action *action)
 	}
 	else if (action->getDetails()->button.button == SDL_BUTTON_RIGHT)
 	{
-		_game->pushState(new SoldierInfoState(_base, row));
+		_game->pushState(new SoldierInfoState(_base, row, false));
 	}
 }
 
@@ -501,8 +510,6 @@ void CraftSoldiersState::lstSoldiersMousePress(Action *action)
  */
 void CraftSoldiersState::btnDeassignAllSoldiersClick(Action *action)
 {
-	Uint8 color = _lstSoldiers->getColor();
-
 	int row = 0;
 	for (auto* soldier : *_base->getSoldiers())
 	{

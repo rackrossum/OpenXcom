@@ -569,7 +569,7 @@ void GeoscapeState::handle(Action *action)
 						auto* item = _game->getMod()->getItem(itemType);
 						if (item && item->isRecoverable() && !item->isAlien() && item->getSellCost() > 0)
 						{
-							xbase->getStorageItems()->addItem(itemType, 2);
+							xbase->getStorageItems()->addItem(item, 2);
 						}
 					}
 				}
@@ -585,7 +585,7 @@ void GeoscapeState::handle(Action *action)
 						auto* item = _game->getMod()->getItem(itemType);
 						if (item && item->isRecoverable() && item->isAlien() && item->getSellCost() > 0)
 						{
-							xbase->getStorageItems()->addItem(itemType, 2);
+							xbase->getStorageItems()->addItem(item, 2);
 						}
 					}
 				}
@@ -1123,8 +1123,13 @@ void GeoscapeState::time5Seconds()
 						break;
 					}
 				}
+				//if (_ufoIsAttacking)
+				{
+					// Note: this was moved from DogfightState.cpp, as it was not 100% reliable there
+					xcraft->evacuateCrew(_game->getMod());
+				}
 				// if a transport craft has been shot down, kill all the soldiers on board.
-				if (xcraft->getRules()->getMaxUnits() > 0)
+				if (xcraft->getRules()->getMaxUnitsLimit() > 0)
 				{
 					for (auto soldierIt = xbase->getSoldiers()->begin(); soldierIt != xbase->getSoldiers()->end();)
 					{
@@ -1441,9 +1446,6 @@ void GeoscapeState::time5Seconds()
  */
 class DetectXCOMBase
 {
-	typedef Ufo* argument_type;
-	typedef bool result_type;
-
 public:
 	/// Create a detector for the given base.
 	DetectXCOMBase(const Base &base) : _base(base) { /* Empty by design.  */ }
@@ -1471,19 +1473,6 @@ bool DetectXCOMBase::operator()(const Ufo *ufo) const
 	}
 	return RNG::percent(_base.getDetectionChance());
 }
-
-/**
- * Functor that marks an XCOM base for retaliation.
- * This is required because of the iterator type.
- */
-struct SetRetaliationTarget
-{
-	typedef std::map<const Region*, Base*>::value_type argument_type;
-	typedef void result_type;
-
-	/// Mark as a valid retaliation target.
-	void operator()(const argument_type &iter) const { iter.second->setRetaliationTarget(true); }
-};
 
 /**
  * Takes care of any game logic that has to
@@ -1565,7 +1554,10 @@ void GeoscapeState::time10Minutes()
 			}
 		}
 		// Now mark the bases as discovered.
-		std::for_each(discovered.begin(), discovered.end(), SetRetaliationTarget());
+		for (auto& pair : discovered)
+		{
+			pair.second->setRetaliationTarget(true);
+		}
 	}
 
 	// Handle alien bases detecting xcom craft and generating hunt missions
@@ -2113,6 +2105,23 @@ void GeoscapeState::time1Hour()
 		}
 	}
 
+	// Handle base defenses maintenance
+	for (auto* xbase : *_game->getSavedGame()->getBases())
+	{
+		for (auto* facility : *xbase->getFacilities())
+		{
+			auto* ammo = facility->rearm();
+			if (ammo)
+			{
+				std::string msg = tr("STR_NOT_ENOUGH_ITEM_TO_REARM_FACILITY_AT_BASE")
+					.arg(tr(ammo->getType()))
+					.arg(tr(facility->getRules()->getType()))
+					.arg(xbase->getName());
+				popup(new CraftErrorState(this, msg));
+			}
+		}
+	}
+
 	// Handle transfers
 	bool window = false;
 	for (auto* xbase : *_game->getSavedGame()->getBases())
@@ -2158,10 +2167,9 @@ void GeoscapeState::time1Hour()
 			if (!_game->getSavedGame()->getAlienContainmentChecked())
 			{
 				std::map<int, int> prisonTypes;
-				RuleItem *rule = nullptr;
 				for (const auto& item : *xbase->getStorageItems()->getContents())
 				{
-					rule = _game->getMod()->getItem(item.first, true);
+					const RuleItem* rule = item.first;
 					if (rule->isAlien())
 					{
 						prisonTypes[rule->getPrisonType()] += 1;
@@ -2223,9 +2231,6 @@ void GeoscapeState::time1Hour()
  */
 class GenerateSupplyMission
 {
-	typedef const AlienBase* argument_type;
-	typedef void result_type;
-
 public:
 	/// Store rules and game data references for later use.
 	GenerateSupplyMission(Game &engine, const Globe &globe) : _engine(engine), _globe(globe) { /* Empty by design */ }
@@ -2377,13 +2382,13 @@ void GeoscapeState::time1Day()
 			// 3b. handle interrogation
 			if (Options::retainCorpses && research->needItem() && research->destroyItem())
 			{
-				auto* ruleUnit = mod->getUnit(research->getName(), false);
+				auto* ruleUnit = mod->getUnit(research->getName(), false); // don't use getNeededItem()
 				if (ruleUnit)
 				{
 					auto* ruleCorpse = ruleUnit->getArmor()->getCorpseGeoscape();
 					if (ruleCorpse && ruleCorpse->isRecoverable() && ruleCorpse->isCorpseRecoverable())
 					{
-						xbase->getStorageItems()->addItem(ruleCorpse->getType());
+						xbase->getStorageItems()->addItem(ruleCorpse);
 					}
 				}
 			}
@@ -2682,6 +2687,7 @@ void GeoscapeState::time1Day()
 					if (RNG::percent(chanceToDetect))
 					{
 						alienBase->setDiscovered(true);
+						popup(new AlienBaseState(alienBase, this));
 					}
 				}
 			}
@@ -3398,7 +3404,7 @@ void GeoscapeState::handleBaseDefense(Base *base, Ufo *ufo)
 		if (ufo->getRules()->getMissilePower() < 0)
 		{
 			// It's a nuclear warhead... Skynet knows no mercy
-			popup(new BaseDestroyedState(base, true, false));
+			popup(new BaseDestroyedState(base, ufo, true, false));
 		}
 		else
 		{
@@ -3412,7 +3418,7 @@ void GeoscapeState::handleBaseDefense(Base *base, Ufo *ufo)
 			base->cleanupDefenses(true);
 
 			// let the player know that some facilities were destroyed, but the base survived
-			popup(new BaseDestroyedState(base, true, true));
+			popup(new BaseDestroyedState(base, ufo, true, true));
 		}
 	}
 	else if (base->getAvailableSoldiers(true, true) > 0 || !base->getVehicles()->empty())
@@ -3435,7 +3441,7 @@ void GeoscapeState::handleBaseDefense(Base *base, Ufo *ufo)
 	else
 	{
 		// Please garrison your bases in future
-		popup(new BaseDestroyedState(base, false, false));
+		popup(new BaseDestroyedState(base, ufo, false, false));
 	}
 }
 
@@ -3666,7 +3672,8 @@ void GeoscapeState::determineAlienMissions()
 			(month < 1 || command->getMaxScore() >= currentScore) &&
 			(month < 1 || command->getMinFunds() <= currentFunds) &&
 			(month < 1 || command->getMaxFunds() >= currentFunds) &&
-			command->getMinDifficulty() <= save->getDifficulty())
+			command->getMinDifficulty() <= save->getDifficulty() &&
+			command->getMaxDifficulty() >= save->getDifficulty())
 		{
 			// level two condition check: make sure we meet any research requirements, if any.
 			bool triggerHappy = true;
@@ -3783,10 +3790,24 @@ void GeoscapeState::determineAlienMissions()
 			throw Exception(ss.str());
 		}
 		// level four condition check: does random chance favour this command's execution?
-		if (process && RNG::percent(command->getExecutionOdds()))
+		if (process)
 		{
-			// good news, little command pointer! you're FDA approved! off to the main processing facility with you!
-			success = processCommand(command);
+			bool rngret = RNG::percent(command->getExecutionOdds());
+			if (Options::verboseLogging && Options::oxceGeoscapeDebugLogMaxEntries > 0)
+			{
+				std::ostringstream ss;
+				ss << "month: " << month;
+				ss << " script: " << command->getType();
+				ss << " odds: " << command->getExecutionOdds();
+				ss << " rng: " << rngret;
+				save->getGeoscapeDebugLog().push_back(ss.str());
+			}
+			if (rngret)
+			{
+				// good news, little command pointer! you're FDA approved! off to the main processing facility with you!
+				success = processCommand(command);
+			}
+
 		}
 		if (command->getLabel() > 0)
 		{

@@ -273,10 +273,7 @@ std::unique_ptr<std::istream> FileRecord::getIStream() const
 			Log(LOG_FATAL) << err;
 			throw Exception(err);
 		}
-		std::string a_string((char *)data, size);
-		auto rv = new std::stringstream(a_string);
-		mz_free(data);
-		return std::unique_ptr<std::istream>(rv);
+		return std::unique_ptr<std::istream>(new StreamData(RawData{data, size, mz_free}));
 	} else {
 		return CrossPlatform::readFile(fullpath);
 	}
@@ -1032,6 +1029,8 @@ void scanModDir(const std::string& dirname, const std::string& basename, bool pr
 		"OpenXCom_Unlimited_Waypoints",
 		"OpenXCom_Unlimited_Waypoints_TFTD",
 		"PSX_Static_Cydonia_Map",
+		"Smarter_Equip",
+		"Smarter_Equip_TFTD",
 		"StrategyCore_Swap_Small_USOs_TFTD",
 		"TFTD_Damage",
 		"UFOextender_Gun_Melee",

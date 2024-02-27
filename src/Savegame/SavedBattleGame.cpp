@@ -504,7 +504,7 @@ void SavedBattleGame::load(const YAML::Node &node, Mod *mod, SavedGame* savedGam
 	_maxAmbienceRandomDelay = node["maxAmbienceRandomDelay"].as<int>(_maxAmbienceRandomDelay);
 	_currentAmbienceDelay = node["currentAmbienceDelay"].as<int>(_currentAmbienceDelay);
 	_music = node["music"].as<std::string>(_music);
-	_baseItems->load(node["baseItems"]);
+	_baseItems->load(node["baseItems"], mod);
 	_turnLimit = node["turnLimit"].as<int>(_turnLimit);
 	_chronoTrigger = ChronoTrigger(node["chronoTrigger"].as<int>(_chronoTrigger));
 	_cheatTurn = node["cheatTurn"].as<int>(_cheatTurn);
@@ -512,6 +512,25 @@ void SavedBattleGame::load(const YAML::Node &node, Mod *mod, SavedGame* savedGam
 	_toggleNightVision = node["toggleNightVision"].as<bool>(_toggleNightVision);
 	_toggleBrightness = node["toggleBrightness"].as<int>(_toggleBrightness);
 	_scriptValues.load(node, _rule->getScriptGlobal());
+
+	// Sanity checks
+	for (auto* unit : _units)
+	{
+		switch (unit->getStatus())
+		{
+		case STATUS_STANDING:
+		case STATUS_DEAD:
+		case STATUS_UNCONSCIOUS:
+		case STATUS_IGNORE_ME:
+			break;
+		default:
+			Log(LOG_ERROR) << "Save '" << savedGame->getName()
+				<< "' is corrupted. Unit " << unit->getType()
+				<< " (id: " << unit->getId()
+				<< ") has an invalid 'status: " << unit->getStatus() << "'";
+			break;
+		}
+	}
 }
 
 /**
@@ -1603,6 +1622,33 @@ void SavedBattleGame::endTurn()
 			continue;
 		}
 
+		// Disclaimer: hardcoded!
+		if (bu->getFaction() == FACTION_NEUTRAL && bu->getOriginalFaction() == FACTION_HOSTILE)
+		{
+			if (_side != FACTION_PLAYER)
+			{
+				// a hostile converted to a neutral during the player turn, just keep them mostly "as is" during the hostile/neutral turn...
+				if (_side == FACTION_HOSTILE)
+				{
+					bu->updateUnitStats(false, true);
+				}
+				bu->setVisible(false);
+			}
+			else
+			{
+				// ...and convert them back at the beginning of the player turn
+				bu->prepareNewTurn();
+
+				if (bu->getAIModule())
+				{
+					// don't forget to rewire them back to attack the player again
+					bu->getAIModule()->setTargetFaction(FACTION_PLAYER);
+				}
+			}
+			// skip the standard logic
+			continue;
+		}
+
 		if (bu->getFaction() == _side)
 		{
 			bu->prepareNewTurn();
@@ -2151,6 +2197,7 @@ BattleUnit *SavedBattleGame::convertUnit(BattleUnit *unit)
 	const Unit* type = unit->getSpawnUnit();
 
 	BattleUnit *newUnit = createTempUnit(type, unit->getSpawnUnitFaction());
+	newUnit->setSpawnUnitFaction(unit->getSpawnUnitFaction()); // allied/neutral zombie should spawn an allied/neutral chryssalid?
 
 	newUnit->clearTimeUnits();
 	newUnit->setVisible(visible);
@@ -3550,6 +3597,18 @@ void getTileScript(const SavedBattleGame* sbg, const Tile*& t, int x, int y, int
 	}
 }
 
+void getTileEditableScript(SavedBattleGame* sbg, Tile*& t, int x, int y, int z)
+{
+	if (sbg)
+	{
+		t = sbg->getTile(Position(x, y, z));
+	}
+	else
+	{
+		t = nullptr;
+	}
+}
+
 void setAlienItemLevelScript(SavedBattleGame* sbg, int val)
 {
 	if (sbg)
@@ -3611,6 +3670,7 @@ void SavedBattleGame::ScriptRegister(ScriptParserBase* parser)
 	sbg.add<&SavedBattleGame::getTurn>("getTurn", "Current turn, 0 - before battle, 1 - first turn, each stage reset this value.");
 	sbg.add<&SavedBattleGame::getAnimFrame>("getAnimFrame");
 	sbg.add<&getTileScript>("getTile", "Get tile on position x, y, z");
+	sbg.add<&getTileEditableScript>("getTile", "Get tile on position x, y, z");
 
 	sbg.add<&SavedBattleGame::getAlienItemLevel>("getAlienItemLevel");
 	sbg.add<&setAlienItemLevelScript>("setAlienItemLevel");

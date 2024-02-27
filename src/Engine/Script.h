@@ -94,7 +94,7 @@ using ScriptNull = std::nullptr_t;
 /**
  * Script numeric type, alias to int.
  */
-using ScriptInt = int;
+using ScriptInt = Sint32;
 
 /**
  * Script const text, always zero terminated.
@@ -142,6 +142,13 @@ inline ProgPos operator++(ProgPos& pos, int)
 	return old;
 }
 
+/**
+ * Dummy type used to separate function args groups.
+ */
+class ScriptArgSeparator
+{
+};
+
 ////////////////////////////////////////////////////////////
 //					enum definitions
 ////////////////////////////////////////////////////////////
@@ -187,8 +194,9 @@ enum ArgEnum : ArgEnumBase
 	ArgInt = ArgSpecSize * 2,
 	ArgLabel = ArgSpecSize * 3,
 	ArgText = ArgSpecSize * 4,
+	ArgSep = ArgSpecSize * 5,
 
-	ArgMax = ArgSpecSize * 5,
+	ArgMax = ArgSpecSize * 6,
 };
 
 /**
@@ -300,6 +308,10 @@ inline ArgEnum ArgRegisteType()
 	else if (std::is_same<T, ProgPos>::value)
 	{
 		return ArgLabel;
+	}
+	else if (std::is_same<T, ScriptArgSeparator>::value)
+	{
+		return ArgSep;
 	}
 	else
 	{
@@ -515,8 +527,9 @@ struct TypeInfoImpl
 
 	enum
 	{
-		metaDestSize = std::is_pod<t3>::value ? sizeof(t3) : 0,
-		metaDestAlign = std::is_pod<t3>::value ? alignof(t3) : 0
+		metaIsSimple = std::is_trivially_copyable_v<t3> && std::is_nothrow_default_constructible_v<t3> && std::is_trivially_destructible_v<t3>,
+		metaDestSize = metaIsSimple ? sizeof(t3) : 0,
+		metaDestAlign = metaIsSimple ? alignof(t3) : 0
 	};
 
 	/// meta data of destination type (without pointer), invalid if type is not POD
@@ -919,12 +932,6 @@ public:
 	/// Copy constructor.
 	constexpr ScriptRef(const ScriptRef&) = default;
 
-	/// Constructor from pointer.
-	explicit ScriptRef(ptr p) : ScriptRange{ p , p + strlen(p) }
-	{
-
-	}
-
 	/// Constructor from char array.
 	template<int I>
 	constexpr explicit ScriptRef(const char (&p)[I]) : ScriptRange{ p , p + I - 1 }
@@ -959,7 +966,7 @@ public:
 	/// Return sub range of current range.
 	constexpr ScriptRef substr(size_t p, size_t s = std::string::npos) const
 	{
-		const size_t totalSize = _end - _begin;
+		const size_t totalSize = size();
 		if (p >= totalSize)
 		{
 			return ScriptRef{ };
@@ -976,6 +983,38 @@ public:
 		}
 	}
 
+	constexpr ScriptRef head(size_t p) const
+	{
+		return substr(0, p);
+	}
+
+	constexpr ScriptRef tail(size_t p) const
+	{
+		return substr(p);
+	}
+
+	constexpr ScriptRef headFromEnd(size_t p) const
+	{
+		const size_t totalSize = size();
+		if (p >= totalSize)
+		{
+			return *this;
+		}
+
+		return substr(totalSize - p);
+	}
+
+	constexpr ScriptRef tailFromEnd(size_t p) const
+	{
+		const size_t totalSize = size();
+		if (p >= totalSize)
+		{
+			return ScriptRef{ };
+		}
+
+		return substr(0, totalSize - p);
+	}
+
 	/// Create string based on current range.
 	std::string toString() const
 	{
@@ -986,6 +1025,12 @@ public:
 	static ScriptRef tempFrom(const std::string& s)
 	{
 		return { s.data(), s.data() + s.size() };
+	}
+
+	/// Create pernamet ref based on script.
+	constexpr static ScriptRef staticFrom(ptr p)
+	{
+		return { p, p + std::char_traits<char>::length(p) };
 	}
 
 	/// Compare two ranges.
@@ -1049,7 +1094,7 @@ struct ScriptTypeData
  */
 struct ScriptValueData
 {
-	ScriptRawMemory<sizeof(void*)> data;
+	ScriptRawMemory<2*sizeof(void*)> data;
 	ArgEnum type = ArgInvalid;
 	Uint8 size = 0;
 
@@ -1163,6 +1208,7 @@ class ScriptParserBase
 	ScriptRef _regOutName[ScriptMaxOut];
 	std::string _name;
 	std::string _defaultScript;
+	std::string _description;
 	std::vector<std::vector<char>> _strings;
 	std::vector<ScriptTypeData> _typeList;
 	std::vector<ScriptProcData> _procList;
@@ -1235,6 +1281,8 @@ protected:
 	bool haveTypeBase(ArgEnum type);
 	/// Set default script for type.
 	void setDefault(const std::string& s) { _defaultScript = s; }
+	/// Set description for script.
+	void setDescription(const std::string& s) { _description = s; }
 	/// Set mode where return does not accept any value.
 	void setEmptyReturn() { _emptyReturn = true; }
 
@@ -1332,11 +1380,30 @@ public:
 	/// Get type data.
 	const ScriptTypeData* getType(ArgEnum type) const;
 	/// Get type data.
-	const ScriptTypeData* getType(ScriptRef name, ScriptRef postfix = {}) const;
+	const ScriptTypeData* getType(ScriptRef name) const
+	{
+		ScriptRef r[] = { name };
+		return getType({ std::begin(r), std::end(r)});
+	}
 	/// Get function data.
-	ScriptRange<ScriptProcData> getProc(ScriptRef name, ScriptRef postfix = {}) const;
+	ScriptRange<ScriptProcData> getProc(ScriptRef name) const
+	{
+		ScriptRef r[] = { name };
+		return getProc({ std::begin(r), std::end(r)});
+	}
 	/// Get arguments data.
-	const ScriptRefData* getRef(ScriptRef name, ScriptRef postfix = {}) const;
+	const ScriptRefData* getRef(ScriptRef name) const
+	{
+		ScriptRef r[] = { name };
+		return getRef({ std::begin(r), std::end(r)});
+	}
+	/// Get type data.
+	const ScriptTypeData* getType(ScriptRange<ScriptRef> name) const;
+	/// Get function data.
+	ScriptRange<ScriptProcData> getProc(ScriptRange<ScriptRef> name) const;
+	/// Get arguments data.
+	const ScriptRefData* getRef(ScriptRange<ScriptRef> name) const;
+
 	/// Get script shared data.
 	ScriptGlobal* getGlobal() { return _shared; }
 	/// Get script shared data.
@@ -1685,7 +1752,7 @@ public:
 					Tag::type(),
 					TagData
 					{
-						ScriptRef{ Tag::Parent::ScriptName },
+						ScriptRef::staticFrom(Tag::Parent::ScriptName),
 						Tag::limit(),
 						[](size_t i) { return ScriptValueData{ Tag::make(i) }; },
 						std::vector<TagValueData>{},
