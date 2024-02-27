@@ -23,6 +23,7 @@
 #include <algorithm>
 #include <functional>
 #include <ctime>
+#include <future>
 #include <yaml-cpp/yaml.h>
 #include "../version.h"
 #include "../Engine/Logger.h"
@@ -826,9 +827,18 @@ void SavedGame::save(const std::string &filename, Mod *mod) const
 	{
 		node["regions"].push_back(region->save());
 	}
-	for (const auto* xbase : _bases)
 	{
-		node["bases"].push_back(xbase->save());
+		auto save = ([](Base* pBase) {
+			return pBase->save();
+			});
+
+		std::vector<std::future<YAML::Node>> futures;
+
+		for (auto base : _bases)
+			futures.push_back(std::async(std::launch::async, save, base));
+
+		for (auto& future : futures)
+			node["bases"].push_back(future.get());
 	}
 	for (const auto* wp : _waypoints)
 	{
