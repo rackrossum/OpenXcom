@@ -81,7 +81,7 @@ namespace OpenXcom
 						transferedItemsCount++;
 					}
 				}
-				else if (transfer->getType() == TRANSFER_ITEM && transfer->getItems() == item->getType())
+				else if (transfer->getType() == TRANSFER_ITEM && transfer->getItems()->getType() == item->getType())
 				{
 					transferedItemsCount += transfer->getQuantity();
 				}

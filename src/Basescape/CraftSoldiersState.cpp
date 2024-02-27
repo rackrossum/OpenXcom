@@ -513,7 +513,7 @@ void CraftSoldiersState::btnDeassignAllSoldiersClick(Action *action)
 	int row = 0;
 	for (auto* soldier : *_base->getSoldiers())
 	{
-		color = _lstSoldiers->getColor();
+		auto color = _lstSoldiers->getColor();
 		if (soldier->getCraft() && soldier->getCraft()->getStatus() != "STR_OUT")
 		{
 			soldier->setCraftAndMoveEquipment(0, _base, _game->getSavedGame()->getMonthsPassed() == -1);
