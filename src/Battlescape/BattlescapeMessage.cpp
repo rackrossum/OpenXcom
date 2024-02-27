@@ -21,6 +21,7 @@
 #include "../Interface/Text.h"
 #include "../Interface/ProgressBar.h"
 #include "../Engine/Palette.h"
+#include "../Engine/Options.h"
 
 namespace OpenXcom
 {
@@ -157,8 +158,12 @@ void BattlescapeMessage::setPalette(const SDL_Color *colors, int firstcolor, int
 void BattlescapeMessage::blit(SDL_Surface *surface)
 {
 	Surface::blit(surface);
-	_window->blit(surface);
-	_text->blit(surface);
+	if (Options::OXCEN::hideEnemyTurnBackground)
+	{
+		_window->blit(surface);
+		_text->blit(surface);
+	}
+	
 	_txtThinking->blit(surface);
 	_progressBar->blit(surface);
 }

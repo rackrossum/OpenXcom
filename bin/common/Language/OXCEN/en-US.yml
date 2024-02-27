@@ -8,3 +8,5 @@ en-US:
   STR_HIGHLIGHT_LOW_MANA_SOLDIERS_DESC: "Highlight the row field of soldiers with low mana(sanity, vigor). Highlighting is triggered at less than 50% mana, the lower it is, the darker it is. 0 - Disabled, 1 - Highlight name, 2 - Highlight rank"
   STR_DEFAULT_SOLDIERS_SORTER: "Default sorting of soldiers"
   STR_DEFAULT_SOLDIERS_SORTER_DESC: "When the soldiers list window is displayed, the soldiers are sorted, 0 - in the original order, 1 - by number of kills, 2 - by accuracy of the shot, 3 - by current mana(sanity, vigor)"
+  STR_HIDE_ENEMY_TURN_BACKGROUND: "Hide enemy turn background picture"
+  STR_HIDE_ENEMY_TURN_BACKGROUND_DESC: "With YES selected, only the progress bar will be shown with the label"

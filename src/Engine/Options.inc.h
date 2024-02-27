@@ -111,6 +111,8 @@ namespace OXCEN
 
 	enum class DefaultSoldiersSorter;
 	OPT int defaultSoldiersSorter;
+
+	OPT bool hideEnemyTurnBackground;
 }
 
 // OXCE hidden, accessible only via options.cfg

@@ -523,6 +523,7 @@ void createOptionsOTHER()
 	_info.push_back(OptionInfo(OPTION_OTHER, "oxcenItemTooltipHoverDelay", &OXCEN::ItemTooltipHoverDelayInTenths, 15, "STR_ITEM_TOOLTIP_HOVER_DELAY", "STR_GENERAL"));
 	_info.push_back(OptionInfo(OPTION_OTHER, "oxcenHighlightLowManaSoldiersMode", &OXCEN::highlightLowManaSoldiersMode, 2, "STR_HIGHLIGHT_LOW_MANA_SOLDIERS", "STR_BASESCAPE"));
 	_info.push_back(OptionInfo(OPTION_OTHER, "oxcenDefaultSoldiersSorter", &OXCEN::defaultSoldiersSorter, 0, "STR_DEFAULT_SOLDIERS_SORTER", "STR_BASESCAPE"));
+	_info.push_back(OptionInfo(OPTION_OTHER, "oxcenHideEnemyTurnBackground", &OXCEN::hideEnemyTurnBackground, false, "STR_HIDE_ENEMY_TURN_BACKGROUND", "STR_GENERAL"));
 }
 
 void createAdvancedOptionsOTHER()
