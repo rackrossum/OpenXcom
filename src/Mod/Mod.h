@@ -58,6 +58,7 @@ class RuleCraft;
 class RuleCraftWeapon;
 class RuleItemCategory;
 class RuleItem;
+class RuleWeaponSet;
 struct RuleDamageType;
 class RuleUfo;
 class RuleTerrain;
@@ -171,6 +172,7 @@ private:
 	std::map<std::string, RuleCraftWeapon*> _craftWeapons;
 	std::map<std::string, RuleItemCategory*> _itemCategories;
 	std::map<std::string, RuleItem*> _items;
+	std::map<std::string, RuleWeaponSet*> _weaponSets;
 	std::map<std::string, RuleUfo*> _ufos;
 	std::map<std::string, RuleTerrain*> _terrains;
 	std::map<std::string, MapDataSet*> _mapDataSets;
@@ -218,14 +220,14 @@ private:
 	int _maxStaticLightDistance, _maxDynamicLightDistance, _enhancedLighting;
 	int _costHireEngineer, _costHireScientist;
 	int _costEngineer, _costScientist, _timePersonnel, _hireByCountryOdds, _hireByRegionOdds, _initialFunding;
-	int _aiUseDelayBlaster, _aiUseDelayFirearm, _aiUseDelayGrenade, _aiUseDelayMelee, _aiUseDelayPsionic;
+	int _aiUseDelayBlaster, _aiUseDelayFirearm, _aiUseDelayGrenade, _aiUseDelayProxy, _aiUseDelayMelee, _aiUseDelayPsionic;
 	int _aiFireChoiceIntelCoeff, _aiFireChoiceAggroCoeff;
 	bool _aiExtendedFireModeChoice, _aiRespectMaxRange, _aiDestroyBaseFacilities;
 	bool _aiPickUpWeaponsMoreActively, _aiPickUpWeaponsMoreActivelyCiv;
 	int _maxLookVariant, _tooMuchSmokeThreshold, _customTrainingFactor, _minReactionAccuracy;
 	int _chanceToStopRetaliation;
 	bool _lessAliensDuringBaseDefense;
-	bool _allowCountriesToCancelAlienPact, _buildInfiltrationBaseCloseToTheCountry;
+	bool _allowCountriesToCancelAlienPact, _buildInfiltrationBaseCloseToTheCountry, _infiltrateRandomCountryInTheRegion;
 	bool _allowAlienBasesOnWrongTextures;
 	int _kneelBonusGlobal, _oneHandedPenaltyGlobal;
 	int _enableCloseQuartersCombat, _closeQuartersAccuracyGlobal, _closeQuartersTuCostGlobal, _closeQuartersEnergyCostGlobal, _closeQuartersSneakUpGlobal;
@@ -248,7 +250,7 @@ private:
 	std::array<int, (size_t)(RANK_COMMANDER + 1)> _soldiersPerRank;
 	int _pilotAccuracyZeroPoint, _pilotAccuracyRange, _pilotReactionsZeroPoint, _pilotReactionsRange;
 	int _pilotBraveryThresholds[3];
-	int _performanceBonusFactor;
+	double _performanceBonusFactor;
 	bool _enableNewResearchSorting;
 	int _displayCustomCategories;
 	bool _shareAmmoCategories, _showDogfightDistanceInKm, _showFullNameInAlienInventory;
@@ -302,7 +304,7 @@ private:
 	std::vector<std::string> _alienMissionsIndex, _terrainIndex, _customPalettesIndex, _arcScriptIndex, _eventScriptIndex, _eventIndex, _missionScriptIndex;
 	std::vector<std::vector<int> > _alienItemLevels;
 	std::vector<std::array<SDL_Color, TransparenciesOpacityLevels>> _transparencies;
-	int _facilityListOrder, _craftListOrder, _itemCategoryListOrder, _itemListOrder, _researchListOrder,  _manufactureListOrder;
+	int _facilityListOrder, _craftListOrder, _itemCategoryListOrder, _itemListOrder, _armorListOrder, _alienRaceListOrder, _researchListOrder,  _manufactureListOrder;
 	int _soldierBonusListOrder, _transformationListOrder, _ufopaediaListOrder, _invListOrder, _soldierListOrder;
 	std::vector<ModData> _modData;
 	ModData* _modCurrent;
@@ -419,12 +421,14 @@ public:
 	static std::string DEBRIEF_MUSIC_BAD;
 	static int DIFFICULTY_COEFFICIENT[5];
 	static int SELL_PRICE_COEFFICIENT[5];
+	static int BUY_PRICE_COEFFICIENT[5];
 	static int DIFFICULTY_BASED_RETAL_DELAY[5];
 	static int UNIT_RESPONSE_SOUNDS_FREQUENCY[4];
 	static int PEDIA_FACILITY_RENDER_PARAMETERS[4];
 	static bool EXTENDED_ITEM_RELOAD_COST;
 	static bool EXTENDED_INVENTORY_SLOT_SORTING;
 	static bool EXTENDED_RUNNING_COST;
+	static int EXTENDED_MOVEMENT_COST_ROUNDING;
 	static bool EXTENDED_HWP_LOAD_ORDER;
 	static int EXTENDED_MELEE_REACTIONS;
 	static int EXTENDED_TERRAIN_MELEE;
@@ -705,6 +709,8 @@ public:
 	RuleItem *getItem(const std::string &id, bool error = false) const;
 	/// Gets the available items.
 	const std::vector<std::string> &getItemsList() const;
+	/// Gets the ruleset for a weapon set type.
+	RuleWeaponSet* getWeaponSet(const std::string& type, bool error = false) const;
 	/// Gets the ruleset for a UFO type.
 	RuleUfo *getUfo(const std::string &id, bool error = false) const;
 	/// Gets the available UFOs.
@@ -819,6 +825,8 @@ public:
 	int getAIUseDelayFirearm() const  {return _aiUseDelayFirearm;}
 	/// Gets first turn when AI can use grenades.
 	int getAIUseDelayGrenade() const  {return _aiUseDelayGrenade;}
+	/// Gets first turn when AI can use proxy grenades.
+	int getAIUseDelayProxy() const  {return _aiUseDelayProxy;}
 	/// Gets first turn when AI can use martial arts.
 	int getAIUseDelayMelee() const {return _aiUseDelayMelee;}
 	/// Gets first turn when AI can use psionic abilities.
@@ -853,6 +861,8 @@ public:
 	bool getAllowCountriesToCancelAlienPact() const { return _allowCountriesToCancelAlienPact; }
 	/// Should alien infiltration bases be built close to the infiltrated country?
 	bool getBuildInfiltrationBaseCloseToTheCountry() const { return _buildInfiltrationBaseCloseToTheCountry; }
+	/// Should alien infiltration pick countries in a region randomly (or in a pre-defined ruleset order)?
+	bool getInfiltrateRandomCountryInTheRegion() const { return _infiltrateRandomCountryInTheRegion; }
 	/// Should alien bases be allowed (in worst case) on invalid globe textures or not?
 	bool getAllowAlienBasesOnWrongTextures() const { return _allowAlienBasesOnWrongTextures; }
 	/// Gets the global kneel bonus (default = 115).
@@ -951,8 +961,8 @@ public:
 	int getPilotBraveryThresholdBold() const { return _pilotBraveryThresholds[1]; }
 	/// Gets the pilot's bravery needed for normal approach speed
 	int getPilotBraveryThresholdNormal() const { return _pilotBraveryThresholds[2]; }
-	/// Gets a performance bonus factor
-	int getPerformanceBonusFactor() const { return _performanceBonusFactor; }
+	/// Gets a performance bonus for a given score
+	int getPerformanceBonus(int score) const { return (int)(score * _performanceBonusFactor); }
 	/// Should the player have the option to sort the 'New Research' list?
 	bool getEnableNewResearchSorting() const { return _enableNewResearchSorting; }
 	/// Should custom categories be used in Buy/Sell/Transfer GUIs? 0=no, 1=yes, custom only, 2=both vanilla and custom.

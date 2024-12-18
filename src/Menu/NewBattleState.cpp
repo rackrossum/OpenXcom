@@ -27,6 +27,7 @@
 #include "../Interface/TextButton.h"
 #include "../Interface/TextEdit.h"
 #include "../Interface/TextList.h"
+#include "../Interface/ToggleTextButton.h"
 #include "../Interface/Window.h"
 #include "../Interface/Text.h"
 #include "../Interface/ComboBox.h"
@@ -70,12 +71,14 @@ NewBattleState::NewBattleState() :
 	// Create objects
 	_window = new Window(this, 320, 200, 0, 0, POPUP_BOTH);
 	_btnQuickSearch = new TextEdit(this, 48, 9, 264, 183);
-	_txtTitle = new Text(320, 17, 0, 9);
+	_txtTitle = new Text(304, 17, 8, 9);
 
 	_txtMapOptions = new Text(148, 9, 8, 68);
 	_frameLeft = new Frame(148, 96, 8, 78);
 	_txtAlienOptions = new Text(148, 9, 164, 68);
 	_frameRight = new Frame(148, 96, 164, 78);
+
+	_btnUfoLanded = new ToggleTextButton(100, 16, 212, 8);
 
 	_txtMission = new Text(100, 9, 8, 30);
 	_cbxMission = new ComboBox(this, 214, 16, 98, 26);
@@ -126,6 +129,8 @@ NewBattleState::NewBattleState() :
 	add(_txtAlienOptions, "heading", "newBattleMenu");
 	add(_frameRight, "frames", "newBattleMenu");
 
+	add(_btnUfoLanded, "button1", "newBattleMenu");
+
 	add(_txtMission, "text", "newBattleMenu");
 	add(_txtCraft, "text", "newBattleMenu");
 	add(_btnEquip, "button1", "newBattleMenu");
@@ -175,6 +180,11 @@ NewBattleState::NewBattleState() :
 	_txtAlienOptions->setText(tr("STR_ALIEN_OPTIONS"));
 
 	_frameRight->setThickness(3);
+
+	_btnUfoLanded->setText(tr("STR_LANDED"));
+	_btnUfoLanded->setVisible(Options::oxceCrashedOrLanded > 0);
+	_btnUfoLanded->setPressed(Options::oxceCrashedOrLanded > 1);
+	_txtTitle->setAlign(_btnUfoLanded->getVisible() ? ALIGN_LEFT : ALIGN_CENTER);
 
 	_txtMission->setText(tr("STR_MISSION"));
 
@@ -338,6 +348,25 @@ NewBattleState::~NewBattleState()
 }
 
 /**
+ * Handle key shortcuts.
+ * @param action Pointer to an action.
+ */
+void NewBattleState::handle(Action* action)
+{
+	State::handle(action);
+
+	if (action->getDetails()->type == SDL_KEYDOWN)
+	{
+		// F11 - show/hide "UFO crashed" toggle button
+		if (action->getDetails()->key.keysym.sym == SDLK_F11)
+		{
+			_btnUfoLanded->setVisible(!_btnUfoLanded->getVisible());
+			_txtTitle->setAlign(_btnUfoLanded->getVisible() ? ALIGN_LEFT : ALIGN_CENTER);
+		}
+	}
+}
+
+/**
  * Resets the menu music and savegame
  * when coming back from the battlescape.
  */
@@ -432,6 +461,17 @@ void NewBattleState::load(const std::string &filename)
 			initSave();
 		}
 	}
+
+	const YAML::Node& starter = _game->getMod()->getDefaultStartingBase();
+	if (const YAML::Node& globalTemplates = starter["globalTemplates"])
+	{
+		_game->getSavedGame()->loadTemplates(globalTemplates, _game->getMod());
+	}
+	if (const YAML::Node& ufopediaRuleStatus = starter["ufopediaRuleStatus"])
+	{
+		_game->getSavedGame()->loadUfopediaRuleStatus(ufopediaRuleStatus);
+	}
+
 }
 
 /**
@@ -616,7 +656,8 @@ void NewBattleState::btnOkClick(Action *)
 		_craft->setDestination(u);
 		bgen.setUfo(u);
 		// either ground assault or ufo crash
-		if (RNG::generate(0,1) == 1)
+		bool ufoLanded = _btnUfoLanded->getVisible() ? _btnUfoLanded->getPressed() : RNG::generate(0, 1) == 1;
+		if (ufoLanded)
 		{
 			u->setStatus(Ufo::LANDED);
 			bgame->setMissionType("STR_UFO_GROUND_ASSAULT");
@@ -878,6 +919,10 @@ void NewBattleState::cbxTerrainChange(Action *)
 		}
 	}
 	_cbxAlienRace->setOptions(_alienRaces, true);
+	if (_cbxAlienRace->getSelected() >= _alienRaces.size())
+	{
+		_cbxAlienRace->setSelected(0);
+	}
 }
 
 /**
@@ -946,6 +991,7 @@ void NewBattleState::fillList(NewBattleSelectType selectType, bool isRightClick)
 		_btnCancel->setVisible(true);
 		_btnRandom->setVisible(false);
 		_lstSelect->setVisible(true);
+		_btnQuickSearch->setVisible(Options::oxceQuickSearchButton);
 	}
 
 	std::string searchString = _btnQuickSearch->getText();

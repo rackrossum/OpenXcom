@@ -54,8 +54,9 @@ OPT SDLKey keyGeoDailyPilotExperience, keyGeoUfoTracker, keyGeoTechTreeViewer, k
 	keyRemoveEquipmentFromCraft,
 	keyRemoveArmorFromCraft, keyRemoveArmorFromAllCrafts,
 	keyRemoveSoldiersFromTraining, keyAddSoldiersToTraining,
-	keyInventoryArmor, keyInventoryAvatar, keyInventorySave, keyInventoryLoad,
+	keyInventoryArmor, keyInventoryAvatar, keyInventoryDiaryLight, keyInventorySave, keyInventoryLoad,
 	keyInvSavePersonalEquipment, keyInvLoadPersonalEquipment, keyInvShowPersonalEquipment,
+	keyBattleUnitUp, keyBattleUnitDown,
 	keyBattleShowLayers,
 	keyBattleUseSpecial,
 	keyBattleActionItem1, keyBattleActionItem2, keyBattleActionItem3, keyBattleActionItem4, keyBattleActionItem5,
@@ -67,11 +68,15 @@ OPT SDLKey keyBasescapeBuildNewBase, keyBasescapeBaseInfo, keyBasescapeSoldiers,
 // OXCE, accessible via GUI
 OPT bool oxceUpdateCheck;
 OPT int autosaveSlots;
+OPT int oxceGeoAutosaveFrequency;
+OPT int oxceGeoAutosaveSlots;
 OPT bool oxceLinks;
 OPT bool oxceFatFingerLinks;
+OPT bool oxceQuickSearchButton;
 OPT bool oxceHighlightNewTopics;
 OPT bool oxcePediaShowClipSize;
 
+OPT int oxceInterceptTableSize;
 OPT bool oxceEnableSlackingIndicator;
 OPT int oxceInterceptGuiMaintenanceTime;
 OPT int oxceShowETAMode;
@@ -94,9 +99,11 @@ OPT int oxceWoundedDefendBaseIf;
 OPT bool oxcePlayBriefingMusicDuringEquipment;
 OPT int oxceNightVisionColor;
 OPT int oxceAutoNightVisionThreshold;
+OPT int oxceShowAccuracyOnCrosshair;
 OPT bool oxceAutoSell;
 OPT bool oxceAutomaticPromotions;
 OPT bool oxceEnableOffCentreShooting;
+OPT int oxceCrashedOrLanded;
 
 // OXCE hidden, accessible only via options.cfg
 /**
@@ -108,6 +115,8 @@ OPT bool oxceRawScreenShots;
 OPT bool oxceFirstPersonViewFisheyeProjection;
 OPT bool oxceThumbButtons;
 OPT int oxceThrottleMouseMoveEvent;
+OPT bool oxceDisableThinkingProgressBar;
+OPT bool oxceSortDiscoveredVectorByName;
 
 OPT bool oxceEmbeddedOnly;
 OPT bool oxceListVFSContents;
@@ -120,6 +129,7 @@ OPT int oxceStartUpTextMode;
 
 OPT int oxceGeoscapeDebugLogMaxEntries;
 OPT int oxceGeoSlowdownFactor;
+OPT bool oxceGeoShowScoreInsteadOfFunds;
 
 OPT int oxceBaseInfoDefenseScaleMultiplier;
 OPT int oxceBaseManufactureInfinityButton;
@@ -138,6 +148,7 @@ OPT int oxceToggleBrightnessType;
 
 OPT bool oxceEnableUnitResponseSounds;
 OPT int oxceHiddenMovementBackgroundChangeFrequency;
+OPT bool oxceInventoryShowUnitSlot;
 
 OPT int oxceMaxEquipmentLayoutTemplates;
 
@@ -147,3 +158,5 @@ OPT int newDisplayWidth, newDisplayHeight, newBattlescapeScale, newGeoscapeScale
 OPT std::string newOpenGLShader;
 OPT std::vector< std::pair<std::string, bool> > mods; // ordered list of available mods (lowest priority to highest) and whether they are active
 OPT SoundFormat currentSound;
+
+OPT int battleXcomSpeedOrig;

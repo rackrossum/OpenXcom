@@ -473,7 +473,7 @@ bool ProjectileFlyBState::createNewProjectile()
 		const RuleItem *ruleItem = _action.weapon->getRules();
 		if (_projectileImpact == V_FLOOR || _projectileImpact == V_UNIT || _projectileImpact == V_OBJECT)
 		{
-			if (_unit->getFaction() != FACTION_PLAYER && ruleItem->getBattleType() == BT_GRENADE)
+			if (_unit->getFaction() != FACTION_PLAYER && ruleItem->isGrenadeOrProxy())
 			{
 				_action.weapon->setFuseTimer(ruleItem->getFuseTimerDefault());
 			}
@@ -689,7 +689,7 @@ void ProjectileFlyBState::think()
 				else
 				{
 					_parent->dropItem(pos, _action.weapon);
-					if (_unit->getFaction() != FACTION_PLAYER && ruleItem->getBattleType() == BT_GRENADE)
+					if (_unit->getFaction() != FACTION_PLAYER && ruleItem->isGrenadeOrProxy())
 					{
 						_parent->getTileEngine()->setDangerZone(pos, ruleItem->getExplosionRadius(attack), _action.actor);
 					}
@@ -803,7 +803,15 @@ void ProjectileFlyBState::think()
 										projectileHitUnit(proj->getPosition(offset));
 									}
 									Explosion *explosion = new Explosion(proj->getPosition(offset), _ammo->getRules()->getHitAnimation(), 0, false, false, _ammo->getRules()->getHitAnimationFrames());
-									int power = _ammo->getRules()->getPowerBonus(attack) - _ammo->getRules()->getPowerRangeReduction(proj->getDistance());
+									int power = 0;
+									if (_action.weapon->getRules()->getIgnoreAmmoPower())
+									{
+										power = _action.weapon->getRules()->getPowerBonus(attack) - _action.weapon->getRules()->getPowerRangeReduction(proj->getDistance());
+									}
+									else
+									{
+										power = _ammo->getRules()->getPowerBonus(attack) - _ammo->getRules()->getPowerRangeReduction(proj->getDistance());
+									}
 									_parent->getMap()->getExplosions()->push_back(explosion);
 									_parent->getSave()->getTileEngine()->hit(attack, proj->getPosition(offset), power, _ammo->getRules()->getDamageType());
 

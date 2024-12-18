@@ -55,6 +55,7 @@ std::map<std::string, ModInfo> _modInfos;
 std::string _masterMod;
 int _passwordCheck = -1;
 bool _loadLastSave = false;
+std::string _loadThisSave = "";
 bool _loadLastSaveExpended = false;
 
 /**
@@ -146,6 +147,7 @@ void createOptionsOXC()
 	_info.push_back(OptionInfo(OPTION_OXC, "dragScrollPixelTolerance", &dragScrollPixelTolerance, 10)); // count of pixels
 	_info.push_back(OptionInfo(OPTION_OXC, "battleFireSpeed", &battleFireSpeed, 6));
 	_info.push_back(OptionInfo(OPTION_OXC, "battleXcomSpeed", &battleXcomSpeed, 30));
+	battleXcomSpeedOrig = -1;
 	_info.push_back(OptionInfo(OPTION_OXC, "battleAlienSpeed", &battleAlienSpeed, 30));
 #ifdef __MOBILE__
 	_info.push_back(OptionInfo(OPTION_OXC, "battleNewPreviewPath", (int*)&battleNewPreviewPath, PATH_FULL)); // for android, set full preview by default
@@ -364,6 +366,8 @@ void createOptionsOXCE()
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceFirstPersonViewFisheyeProjection", &oxceFirstPersonViewFisheyeProjection, false));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceThumbButtons", &oxceThumbButtons, true));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceThrottleMouseMoveEvent", &oxceThrottleMouseMoveEvent, 0));
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceDisableThinkingProgressBar", &oxceDisableThinkingProgressBar, false));
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceSortDiscoveredVectorByName", &oxceSortDiscoveredVectorByName, false));
 
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceEmbeddedOnly", &oxceEmbeddedOnly, true));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceListVFSContents", &oxceListVFSContents, false));
@@ -376,6 +380,7 @@ void createOptionsOXCE()
 
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceGeoscapeDebugLogMaxEntries", &oxceGeoscapeDebugLogMaxEntries, 1000, "", "HIDDEN"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceGeoSlowdownFactor", &oxceGeoSlowdownFactor, 1, "", "HIDDEN"));
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceGeoShowScoreInsteadOfFunds", &oxceGeoShowScoreInsteadOfFunds, false, "", "HIDDEN"));
 
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceBaseInfoDefenseScaleMultiplier", &oxceBaseInfoDefenseScaleMultiplier, 100, "", "HIDDEN"));
 #ifdef __MOBILE__
@@ -397,6 +402,7 @@ void createOptionsOXCE()
 
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceEnableUnitResponseSounds", &oxceEnableUnitResponseSounds, true, "", "HIDDEN"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHiddenMovementBackgroundChangeFrequency", &oxceHiddenMovementBackgroundChangeFrequency, 1, "", "HIDDEN"));
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceInventoryShowUnitSlot", &oxceInventoryShowUnitSlot, false, "", "HIDDEN"));
 
 	// TODO: needs restart (or code change) to work properly
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceMaxEquipmentLayoutTemplates", &oxceMaxEquipmentLayoutTemplates, 20, "", "HIDDEN"));
@@ -410,19 +416,24 @@ void createAdvancedOptionsOXCE()
 #endif
 
 	_info.push_back(OptionInfo(OPTION_OXCE, "autosaveSlots", &autosaveSlots, 1, "STR_AUTOSAVE_SLOTS", "STR_GENERAL")); // OXCE only
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceGeoAutosaveFrequency", &oxceGeoAutosaveFrequency, 0, "STR_GEO_AUTOSAVE_FREQUENCY", "STR_GENERAL"));
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceGeoAutosaveSlots", &oxceGeoAutosaveSlots, 1, "STR_GEO_AUTOSAVE_SLOTS", "STR_GENERAL"));
 
 #ifdef __MOBILE__
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceLinks", &oxceLinks, true, "STR_OXCE_LINKS", "STR_GENERAL"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceFatFingerLinks", &oxceFatFingerLinks, true, "", "HIDDEN"));
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceQuickSearchButton", &oxceQuickSearchButton, true, "", "HIDDEN"));
 #else
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceLinks", &oxceLinks, false, "STR_OXCE_LINKS", "STR_GENERAL"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceFatFingerLinks", &oxceFatFingerLinks, false, "", "HIDDEN"));
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceQuickSearchButton", &oxceQuickSearchButton, false, "", "HIDDEN"));
 #endif
 
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHighlightNewTopics", &oxceHighlightNewTopics, true, "STR_HIGHLIGHT_NEW", "STR_GENERAL"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxcePediaShowClipSize", &oxcePediaShowClipSize, false, "STR_PEDIA_SHOW_CLIP_SIZE", "STR_GENERAL"));
 
 	// OXCE options geoscape
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceInterceptTableSize", &oxceInterceptTableSize, 8, "STR_INTERCEPT_TABLE_SIZE", "STR_GEOSCAPE"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceEnableSlackingIndicator", &oxceEnableSlackingIndicator, true, "STR_SHOW_SLACKING_INDICATOR", "STR_GEOSCAPE"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceInterceptGuiMaintenanceTime", &oxceInterceptGuiMaintenanceTime, 2, "STR_SHOW_MAINTENANCE_TIME", "STR_GEOSCAPE"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceShowETAMode", &oxceShowETAMode, 0, "STR_SHOW_ETA", "STR_GEOSCAPE"));
@@ -447,9 +458,11 @@ void createAdvancedOptionsOXCE()
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxcePlayBriefingMusicDuringEquipment", &oxcePlayBriefingMusicDuringEquipment, false, "STR_PLAY_BRIEFING_MUSIC_DURING_EQUIPMENT", "STR_BATTLESCAPE"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceNightVisionColor", &oxceNightVisionColor, 5, "STR_NIGHT_VISION_COLOR", "STR_BATTLESCAPE"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceAutoNightVisionThreshold", &oxceAutoNightVisionThreshold, 15, "STR_AUTO_NIGHT_VISION_THRESHOLD", "STR_BATTLESCAPE"));
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceShowAccuracyOnCrosshair", &oxceShowAccuracyOnCrosshair, 1, "STR_SHOW_ACCURACY_ON_CROSSHAIR", "STR_BATTLESCAPE"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceAutoSell", &oxceAutoSell, false, "STR_AUTO_SELL", "STR_BATTLESCAPE"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceAutomaticPromotions", &oxceAutomaticPromotions, true, "STR_AUTOMATICPROMOTIONS", "STR_BATTLESCAPE"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceEnableOffCentreShooting", &oxceEnableOffCentreShooting, false, "STR_OFF_CENTRE_SHOOTING", "STR_BATTLESCAPE"));
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceCrashedOrLanded", &oxceCrashedOrLanded, 0, "STR_CRASHED_OR_LANDED", "STR_BATTLESCAPE"));
 }
 
 void createControlsOXCE()
@@ -497,6 +510,7 @@ void createControlsOXCE()
 	_info.push_back(OptionInfo(OPTION_OXCE, "keyInvShowPersonalEquipment", &keyInvShowPersonalEquipment, SDLK_p, "STR_PERSONAL_EQUIPMENT", "STR_BASESCAPE"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "keyInventoryArmor", &keyInventoryArmor, SDLK_a, "STR_INVENTORY_ARMOR", "STR_BASESCAPE"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "keyInventoryAvatar", &keyInventoryAvatar, SDLK_m, "STR_INVENTORY_AVATAR", "STR_BASESCAPE"));
+	_info.push_back(OptionInfo(OPTION_OXCE, "keyInventoryDiaryLight", &keyInventoryDiaryLight, SDLK_d, "STR_INVENTORY_DIARY_LIGHT", "STR_BASESCAPE"));
 
 	_info.push_back(OptionInfo(OPTION_OXCE, "keySellAll", &keySellAll, SDLK_x, "STR_SELL_ALL", "STR_BASESCAPE"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "keySellAllButOne", &keySellAllButOne, SDLK_z, "STR_SELL_ALL_BUT_ONE", "STR_BASESCAPE"));
@@ -505,6 +519,8 @@ void createControlsOXCE()
 	_info.push_back(OptionInfo(OPTION_OXCE, "keyMarkAllAsSeen", &keyMarkAllAsSeen, SDLK_x, "STR_MARK_ALL_AS_SEEN", "STR_BASESCAPE"));
 
 	// OXCE controls battlescape
+	_info.push_back(OptionInfo(OPTION_OXCE, "keyBattleUnitUp", &keyBattleUnitUp, SDLK_UNKNOWN, "STR_UNIT_LEVEL_ABOVE", "STR_BATTLESCAPE"));
+	_info.push_back(OptionInfo(OPTION_OXCE, "keyBattleUnitDown", &keyBattleUnitDown, SDLK_UNKNOWN, "STR_UNIT_LEVEL_BELOW", "STR_BATTLESCAPE"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "keyBattleShowLayers", &keyBattleShowLayers, SDLK_UNKNOWN, "STR_MULTI_LEVEL_VIEW", "STR_BATTLESCAPE"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "keyBattleUseSpecial", &keyBattleUseSpecial, SDLK_w, "STR_USE_SPECIAL_ITEM", "STR_BATTLESCAPE"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "keyBattleActionItem1", &keyBattleActionItem1, SDLK_1, "STR_ACTION_ITEM_1", "STR_BATTLESCAPE"));
@@ -539,12 +555,12 @@ void createControlsOTHER()
 static bool _gameIsInstalled(const std::string &gameName)
 {
 	// look for game data in either the data or user directories
-	std::string dataGameFolder = CrossPlatform::searchDataFolder(gameName);
+	std::string dataGameFolder = CrossPlatform::searchDataFolder(gameName, 8);
 	std::string dataGameZipFile = CrossPlatform::searchDataFile(gameName + ".zip");
 	std::string userGameFolder = _userFolder + gameName;
 	std::string userGameZipFile = _userFolder + gameName + ".zip";
-	return (CrossPlatform::folderExists(dataGameFolder)	&& CrossPlatform::getFolderContents(dataGameFolder).size() >= 8)
-	    || (CrossPlatform::folderExists(userGameFolder)	&& CrossPlatform::getFolderContents(userGameFolder).size() >= 8)
+	return (CrossPlatform::folderMinSize(dataGameFolder, 8))
+	    || (CrossPlatform::folderMinSize(userGameFolder, 8))
 		||  CrossPlatform::fileExists( dataGameZipFile )
 		||  CrossPlatform::fileExists( userGameZipFile );
 }
@@ -607,8 +623,13 @@ static void loadArgs()
 	for (size_t i = 1; i < argv.size(); ++i)
 	{
 		auto& arg = argv[i];
-		if (arg.size() > 1 && arg[0] == '-')
+		if ((arg[0] == '-' || arg[0] == '/') && arg.length() > 1)
 		{
+			if (arg == "--")
+			{
+				break;
+			}
+
 			std::string argname;
 			if (arg[1] == '-' && arg.length() > 2)
 				argname = arg.substr(2, arg.length()-1);
@@ -649,6 +670,11 @@ static void loadArgs()
 				{
 					_masterMod = argv[i];
 				}
+				else if (argname == "load")
+				{
+					_loadLastSave = true;
+					_loadThisSave = argv[i];
+				}
 				else
 				{
 					//save this command line option for now, we will apply it later
@@ -671,7 +697,7 @@ static void loadArgs()
 static bool showHelp()
 {
 	std::ostringstream help;
-	help << "OpenXcom v" << OPENXCOM_VERSION_SHORT << std::endl;
+	help << "OpenXcom " << OPENXCOM_VERSION_SHORT << std::endl;
 	help << "Usage: openxcom [OPTION]..." << std::endl << std::endl;
 	help << "-data PATH" << std::endl;
 	help << "        use PATH as the default Data Folder instead of auto-detecting" << std::endl << std::endl;
@@ -683,13 +709,26 @@ static bool showHelp()
 	help << "        set MOD to the current master mod (eg. -master xcom2)" << std::endl << std::endl;
 	help << "-KEY VALUE" << std::endl;
 	help << "        override option KEY with VALUE (eg. -displayWidth 640)" << std::endl << std::endl;
+	help << "-continue" << std::endl;
+	help << "        load last save" << std::endl << std::endl;
+	help << "-load FILENAME" << std::endl;
+	help << "        load the specified FILENAME (from the corresponding master mod subfolder)" << std::endl << std::endl;
+	help << "-version" << std::endl;
+	help << "        show version number" << std::endl << std::endl;
 	help << "-help" << std::endl;
 	help << "-?" << std::endl;
 	help << "        show command-line help" << std::endl;
-	for (auto& arg: CrossPlatform::getArgs())
+	auto& argv = CrossPlatform::getArgs();
+	for (size_t i = 1; i < argv.size(); ++i)
 	{
+		auto& arg = argv[i];
 		if ((arg[0] == '-' || arg[0] == '/') && arg.length() > 1)
 		{
+			if (arg == "--")
+			{
+				break;
+			}
+
 			std::string argname;
 			if (arg[1] == '-' && arg.length() > 2)
 				argname = arg.substr(2, arg.length()-1);
@@ -701,6 +740,23 @@ static bool showHelp()
 				std::cout << help.str();
 				return true;
 			}
+			if (argname == "version")
+			{
+				std::cout << OPENXCOM_VERSION_SHORT << OPENXCOM_VERSION_GIT << std::endl;
+				return true;
+			}
+			if (argname == "cont" || argname == "continue")
+			{
+				continue;
+			}
+
+			// skip next option argument, only couple options do not have it.
+			++i;
+		}
+		else
+		{
+			std::cerr << "Unknown parameter '" << arg << "'" << std::endl;
+			return true;
 		}
 	}
 	return false;
@@ -957,6 +1013,8 @@ void refreshMods()
 
 void updateMods()
 {
+	setDataFolder(CrossPlatform::dirFilename(CrossPlatform::searchDataFolder("common")));
+
 	// pick up stuff in common before-hand
 	FileMap::clear(false, Options::oxceEmbeddedOnly);
 
@@ -1040,9 +1098,26 @@ const ModInfo* getActiveMasterInfo()
 	return &_modInfos.at(_masterMod);
 }
 
+/**
+ * Gets the xcom ruleset info.
+ */
+const ModInfo* getXcomRulesetInfo()
+{
+	if (_modInfos.find("xcom1") != _modInfos.end())
+		return &_modInfos.at("xcom1");
+	else if (_modInfos.find("xcom2") != _modInfos.end())
+		return &_modInfos.at("xcom2");
+	else return nullptr;
+}
+
 bool getLoadLastSave()
 {
 	return _loadLastSave && !_loadLastSaveExpended;
+}
+
+const std::string& getLoadThisSave()
+{
+	return _loadThisSave;
 }
 
 void expendLoadLastSave()

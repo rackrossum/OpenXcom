@@ -89,6 +89,8 @@ enum class BattleActionOrigin { CENTRE = 0, LEFT, RIGHT }; // Used for off-centr
 
 struct BattleActionCost;
 class BattleItem;
+class SavedGame;
+class Base;
 class RuleSkill;
 class Unit;
 class SurfaceSet;
@@ -292,6 +294,7 @@ private:
 	std::vector<std::string> _categories;
 
 	Unit* _vehicleUnit;
+	int _vehicleFixedAmmoSlot;
 	double _size;
 	int _monthlyBuyLimit;
 	int _costBuy, _costSell, _transferTime, _weight;
@@ -315,6 +318,7 @@ private:
 	int _psiMissAnimation, _psiMissAnimFrames;
 	int _power, _powerForAnimation;
 	bool _hidePower;
+	bool _ignoreAmmoPower;
 	float _powerRangeReduction;
 	float _powerRangeThreshold;
 	std::vector<std::vector<std::string>> _compatibleAmmoNames = std::vector<std::vector<std::string>>(AmmoSlotMax);
@@ -332,6 +336,7 @@ private:
 	RuleItemFuseTrigger _fuseTriggerEvents;
 	bool _hiddenOnMinimap;
 	std::string _medikitActionName, _psiAttackName, _primeActionName, _unprimeActionName, _primeActionMessage, _unprimeActionMessage;
+	std::string _sellActionMessage;
 
 	bool _twoHanded, _blockBothHands, _fixedWeapon, _fixedWeaponShow, _isConsumable, _isFireExtinguisher;
 	bool _isExplodingInHands, _specialUseEmptyHand, _specialUseEmptyHandShow;
@@ -348,7 +353,8 @@ private:
 	bool _medikitTargetSelf, _medikitTargetImmune;
 	int _medikitTargetMatrix;
 	std::string _medikitBackground;
-	int _woundRecovery, _healthRecovery, _stunRecovery, _energyRecovery, _manaRecovery, _moraleRecovery, _painKillerRecovery;
+	int _woundRecovery, _healthRecovery, _stunRecovery, _energyRecovery, _manaRecovery, _moraleRecovery;
+	float _painKillerRecovery;
 
 	int _recoveryPoints;
 	int _armor;
@@ -446,16 +452,24 @@ public:
 	const RuleItemCategory* getFirstCategoryWithInvOrder(const Mod* mod) const;
 	/// Gets unit rule if the item is vehicle weapon.
 	Unit* getVehicleUnit() const;
+	/// Gets the fixed ammo slot of the primary vehicle weapon.
+	int getVehicleFixedAmmoSlot() const { return _vehicleFixedAmmoSlot; }
 	/// Gets the item's size.
 	double getSize() const;
+
 	/// Gets the item's monthly buy limit.
 	int getMonthlyBuyLimit() const { return _monthlyBuyLimit; }
-	/// Gets the item's purchase cost.
+	/// Gets the item's basic purchase cost.
 	int getBuyCost() const;
-	/// Gets the item's sale cost.
+	/// Gets the item's purchase cost.
+	int getBuyCostAdjusted(const Base* base, const SavedGame* save) const;
+	/// Gets the item's basic sale cost.
 	int getSellCost() const;
+	/// Gets the item's sale cost.
+	int getSellCostAdjusted(const Base* base, const SavedGame* save) const;
 	/// Gets the item's transfer time.
 	int getTransferTime() const;
+
 	/// Gets the item's weight.
 	int getWeight() const;
 	/// Gets the item's maximum throw range.
@@ -572,6 +586,9 @@ public:
 	/// Ok, so this isn't a melee type weapon but we're using it for melee... how much damage should it do?
 	int getMeleePower() const;
 
+	/// Should the (selected) power attributes come from the weapon/firearm only (and not from the ammo, even if defined)?
+	bool getIgnoreAmmoPower() const { return _ignoreAmmoPower && _battleType == BT_FIREARM; }
+
 	/// Gets amount of power dropped for range in voxels.
 	float getPowerRangeReduction(float range) const;
 	float getPowerRangeReductionRaw() const { return _powerRangeReduction; }
@@ -631,7 +648,7 @@ public:
 	/// Gets the item's throw accuracy.
 	int getAccuracyThrow() const;
 	/// Gets the item's close quarters combat accuracy.
-	int getAccuracyCloseQuarters(Mod *mod) const;
+	int getAccuracyCloseQuarters(const Mod *mod) const;
 	/// Get penalty for firing this weapon on out-of-LOS targets
 	int getNoLOSAccuracyPenalty(Mod *mod) const;
 
@@ -698,6 +715,8 @@ public:
 	bool isMeleeTypeSet() const { return _meleeTypeSet; }
 	/// Gets the item's type.
 	BattleType getBattleType() const;
+	/// Is the item's type BT_GRENADE or BT_PROXIMITYGRENADE?
+	bool isGrenadeOrProxy() const;
 	/// Gets the item's fuse type.
 	BattleFuseType getFuseTimerType() const;
 	/// Gets the item's default fuse value.
@@ -822,6 +841,8 @@ public:
 	const std::string &getUnprimeActionName() const { return _unprimeActionName; }
 	/// Get message for unprime action.
 	const std::string &getUnprimeActionMessage() const { return _unprimeActionMessage; }
+	/// Get message when trying to sell the item.
+	const std::string& getSellActionMessage() const { return _sellActionMessage; }
 	/// is this item a 2 handed weapon?
 	bool isRifle() const;
 	/// is this item a single handed weapon?
@@ -897,9 +918,9 @@ public:
 	/// Gets the index of the sprite in the CustomItemPreview sprite set
 	const std::vector<int> &getCustomItemPreviewIndex() const;
 	/// Gets the kneel bonus.
-	int getKneelBonus(Mod *mod) const;
+	int getKneelBonus(const Mod *mod) const;
 	/// Gets the one-handed penalty.
-	int getOneHandedPenalty(Mod *mod) const;
+	int getOneHandedPenalty(const Mod *mod) const;
 	/// Gets the monthly salary.
 	int getMonthlySalary() const;
 	/// Gets the monthly maintenance.

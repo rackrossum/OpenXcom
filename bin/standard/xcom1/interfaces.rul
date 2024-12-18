@@ -1612,6 +1612,21 @@ interfaces:
         border: 213  # gold
       - id: button
         color: 213   # gold
+  - type: soldierDiaryLight
+    backgroundImage: BACK14.SCR
+    palette: PAL_BASESCAPE
+    elements:
+      - id: palette
+        color: 4     # green
+      - id: window
+        color: 218   # blue
+      - id: text
+        color: 213   # gold
+      - id: list
+        color: 208   # white
+        border: 213  # gold
+      - id: button
+        color: 213   # gold
   - type: soldierBonus
     backgroundImage: BACK14.SCR
     palette: PAL_BASESCAPE
@@ -2031,6 +2046,11 @@ interfaces:
         color: 133
   - type: inventory
     elements:
+      - id: textSlot
+        color: 64
+        color2: 16
+        pos: [65, 95]
+        size: [70, 9]
       - id: textName
         color: 64
       - id: textTUs

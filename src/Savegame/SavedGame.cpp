@@ -110,7 +110,7 @@ SavedGame::SavedGame() :
 	_difficulty(DIFF_BEGINNER), _end(END_NONE), _ironman(false), _globeLon(0.0), _globeLat(0.0), _globeZoom(0),
 	_battleGame(0), _previewBase(nullptr), _debug(false), _warned(false),
 	_togglePersonalLight(true), _toggleNightVision(false), _toggleBrightness(0),
-	_monthsPassed(-1), _selectedBase(0), _autosales(), _disableSoldierEquipment(false), _alienContainmentChecked(false)
+	_monthsPassed(-1), _daysPassed(0), _vehiclesLost(0), _selectedBase(0), _autosales(), _disableSoldierEquipment(false), _alienContainmentChecked(false)
 {
 	_time = new GameTime(6, 1, 1, 1999, 12, 0, 0);
 	_alienStrategy = new AlienStrategy();
@@ -309,6 +309,16 @@ SaveInfo SavedGame::getSaveInfo(const std::string &file, Language *lang)
 		save.displayName = lang->getString("STR_AUTO_SAVE_GEOSCAPE_SLOT");
 		save.reserved = true;
 	}
+	else if (save.fileName.find(AUTOSAVE_GEOSCAPE) != std::string::npos)
+	{
+		GameTime time = GameTime(6, 1, 1, 1999, 12, 0, 0);
+		if (doc["time"])
+		{
+			time.load(doc["time"]);
+		}
+		save.displayName = lang->getString("STR_AUTO_SAVE_GEOSCAPE_SLOT_WITH_NUMBER").arg(time.getDayString(lang));
+		save.reserved = true;
+	}
 	else if (save.fileName == AUTOSAVE_BATTLESCAPE)
 	{
 		save.displayName = lang->getString("STR_AUTO_SAVE_BATTLESCAPE_SLOT");
@@ -397,6 +407,8 @@ void SavedGame::load(const std::string &filename, Mod *mod, Language *lang)
 	if (doc["rng"] && (_ironman || !Options::newSeedOnLoad))
 		RNG::setSeed(doc["rng"].as<uint64_t>());
 	_monthsPassed = doc["monthsPassed"].as<int>(_monthsPassed);
+	_daysPassed = doc["daysPassed"].as<int>(_daysPassed);
+	_vehiclesLost = doc["vehiclesLost"].as<int>(_vehiclesLost);
 	_graphRegionToggles = doc["graphRegionToggles"].as<std::string>(_graphRegionToggles);
 	_graphCountryToggles = doc["graphCountryToggles"].as<std::string>(_graphCountryToggles);
 	_graphFinanceToggles = doc["graphFinanceToggles"].as<std::string>(_graphFinanceToggles);
@@ -546,6 +558,23 @@ void SavedGame::load(const std::string &filename, Mod *mod, Language *lang)
 			MissionSite *m = new MissionSite(mod->getAlienMission(type), mod->getDeployment(deployment), mod->getDeployment(alienWeaponDeploy));
 			m->load(*i);
 			_missionSites.push_back(m);
+			// link with UFO
+			if (m->getUfoUniqueId() > 0)
+			{
+				Ufo* ufo = nullptr;
+				for (auto* u : _ufos)
+				{
+					if (u->getUniqueId() == m->getUfoUniqueId())
+					{
+						ufo = u;
+						break;
+					}
+				}
+				if (ufo)
+				{
+					m->setUfo(ufo);
+				}
+			}
 		}
 		else
 		{
@@ -569,7 +598,7 @@ void SavedGame::load(const std::string &filename, Mod *mod, Language *lang)
 	sortReserchVector(_discovered);
 
 	_generatedEvents = doc["generatedEvents"].as< std::map<std::string, int> >(_generatedEvents);
-	_ufopediaRuleStatus = doc["ufopediaRuleStatus"].as< std::map<std::string, int> >(_ufopediaRuleStatus);
+	loadUfopediaRuleStatus(doc["ufopediaRuleStatus"]);
 	_manufactureRuleStatus = doc["manufactureRuleStatus"].as< std::map<std::string, int> >(_manufactureRuleStatus);
 	_researchRuleStatus = doc["researchRuleStatus"].as< std::map<std::string, int> >(_researchRuleStatus);
 	_monthlyPurchaseLimitLog = doc["monthlyPurchaseLimitLog"].as< std::map<std::string, int> >(_monthlyPurchaseLimitLog);
@@ -664,6 +693,35 @@ void SavedGame::load(const std::string &filename, Mod *mod, Language *lang)
 		}
 	}
 
+	loadTemplates(doc, mod);
+
+	for (YAML::const_iterator i = doc["missionStatistics"].begin(); i != doc["missionStatistics"].end(); ++i)
+	{
+		MissionStatistics *ms = new MissionStatistics();
+		ms->load(*i);
+		_missionStatistics.push_back(ms);
+	}
+
+	for (YAML::const_iterator it = doc["autoSales"].begin(); it != doc["autoSales"].end(); ++it)
+	{
+		std::string itype = it->as<std::string>();
+		if (mod->getItem(itype))
+		{
+			_autosales.insert(mod->getItem(itype));
+		}
+	}
+
+	if (const YAML::Node &battle = doc["battleGame"])
+	{
+		_battleGame = new SavedBattleGame(mod, lang);
+		_battleGame->load(battle, mod, this);
+	}
+
+	_scriptValues.load(doc, mod->getScriptGlobal());
+}
+
+void SavedGame::loadTemplates(const YAML::Node& doc, const Mod* mod)
+{
 	for (int j = 0; j < Options::oxceMaxEquipmentLayoutTemplates; ++j)
 	{
 		std::ostringstream oss;
@@ -716,30 +774,11 @@ void SavedGame::load(const std::string &filename, Mod *mod, Language *lang)
 			_globalCraftLoadoutName[j] = doc[key2].as<std::string>();
 		}
 	}
+}
 
-	for (YAML::const_iterator i = doc["missionStatistics"].begin(); i != doc["missionStatistics"].end(); ++i)
-	{
-		MissionStatistics *ms = new MissionStatistics();
-		ms->load(*i);
-		_missionStatistics.push_back(ms);
-	}
-
-	for (YAML::const_iterator it = doc["autoSales"].begin(); it != doc["autoSales"].end(); ++it)
-	{
-		std::string itype = it->as<std::string>();
-		if (mod->getItem(itype))
-		{
-			_autosales.insert(mod->getItem(itype));
-		}
-	}
-
-	if (const YAML::Node &battle = doc["battleGame"])
-	{
-		_battleGame = new SavedBattleGame(mod, lang);
-		_battleGame->load(battle, mod, this);
-	}
-
-	_scriptValues.load(doc, mod->getScriptGlobal());
+void SavedGame::loadUfopediaRuleStatus(const YAML::Node& node)
+{
+	_ufopediaRuleStatus = node.as< std::map<std::string, int> >(_ufopediaRuleStatus);
 }
 
 /**
@@ -786,6 +825,8 @@ void SavedGame::save(const std::string &filename, Mod *mod) const
 	node["difficulty"] = (int)_difficulty;
 	node["end"] = (int)_end;
 	node["monthsPassed"] = _monthsPassed;
+	node["daysPassed"] = _daysPassed;
+	node["vehiclesLost"] = _vehiclesLost;
 	node["graphRegionToggles"] = _graphRegionToggles;
 	node["graphCountryToggles"] = _graphCountryToggles;
 	node["graphFinanceToggles"] = _graphFinanceToggles;
@@ -857,9 +898,21 @@ void SavedGame::save(const std::string &filename, Mod *mod) const
 	{
 		node["geoscapeEvents"].push_back(ge->save());
 	}
-	for (const auto* research : _discovered)
+	if (Options::oxceSortDiscoveredVectorByName)
 	{
-		node["discovered"].push_back(research->getName());
+		auto discoveredCopy = _discovered;
+		std::sort(discoveredCopy.begin(), discoveredCopy.end(), [&](const RuleResearch* a, const RuleResearch* b) { return a->getName().compare(b->getName()) < 0; });
+		for (const auto* research : discoveredCopy)
+		{
+			node["discovered"].push_back(research->getName());
+		}
+	}
+	else
+	{
+		for (const auto* research : _discovered)
+		{
+			node["discovered"].push_back(research->getName());
+		}
 	}
 	for (const auto* research : _poppedResearch)
 	{
@@ -1009,6 +1062,16 @@ int SavedGame::getDifficultyCoefficient() const
 int SavedGame::getSellPriceCoefficient() const
 {
 	return Mod::SELL_PRICE_COEFFICIENT[std::min((int)_difficulty, 4)];
+}
+
+/**
+ * Returns the game's buy price coefficient based
+ * on the current difficulty level.
+ * @return Buy price coefficient.
+ */
+int SavedGame::getBuyPriceCoefficient() const
+{
+	return Mod::BUY_PRICE_COEFFICIENT[std::min((int)_difficulty, 4)];
 }
 
 /**
@@ -1503,15 +1566,15 @@ const RuleResearch* SavedGame::selectGetOneFree(const RuleResearch* research)
 		{
 			if (isResearched(pair.first, false))
 			{
-				for (auto* research : pair.second)
+				for (auto* res : pair.second)
 				{
-					if (isResearchRuleStatusDisabled(research->getName()))
+					if (isResearchRuleStatusDisabled(res->getName()))
 					{
 						continue; // skip disabled topics
 					}
-					if (!isResearched(research, false))
+					if (!isResearched(res, false))
 					{
-						possibilities.push_back(research);
+						possibilities.push_back(res);
 					}
 				}
 			}
@@ -1562,15 +1625,6 @@ void SavedGame::addFinishedResearchSimple(const RuleResearch * research)
  */
 void SavedGame::addFinishedResearch(const RuleResearch * research, const Mod * mod, Base * base, bool score)
 {
-	// process "re-enables"
-	for (const auto* ree : research->getReenabled())
-	{
-		if (isResearchRuleStatusDisabled(ree->getName()))
-		{
-			setResearchRuleStatus(ree->getName(), RuleResearch::RESEARCH_STATUS_NEW); // reset status
-		}
-	}
-
 	if (isResearchRuleStatusDisabled(research->getName()))
 	{
 		return;
@@ -1586,7 +1640,7 @@ void SavedGame::addFinishedResearch(const RuleResearch * research, const Mod * m
 		const RuleResearch *currentQueueItem = queue.at(currentQueueIndex);
 
 		// 1. Find out and remember if the currentQueueItem has any undiscovered non-disabled "protected unlocks" or "getOneFree"
-		bool hasUndiscoveredProtectedUnlocks = hasUndiscoveredProtectedUnlock(currentQueueItem, mod);
+		bool hasUndiscoveredProtectedUnlocks = hasUndiscoveredProtectedUnlock(currentQueueItem);
 		bool hasAnyUndiscoveredGetOneFrees = hasUndiscoveredGetOneFree(currentQueueItem, false);
 
 		// 2. If the currentQueueItem was *not* already discovered before, add it to discovered research
@@ -1621,6 +1675,15 @@ void SavedGame::addFinishedResearch(const RuleResearch * research, const Mod * m
 			if (!hasUndiscoveredProtectedUnlocks)
 			{
 				checkRelatedZeroCostTopics = false;
+			}
+		}
+
+		// process "re-enables": https://openxcom.org/forum/index.php?topic=12071.0
+		for (const auto* ree : currentQueueItem->getReenabled())
+		{
+			if (isResearchRuleStatusDisabled(ree->getName()))
+			{
+				setResearchRuleStatus(ree->getName(), RuleResearch::RESEARCH_STATUS_NEW); // reset status
 			}
 		}
 
@@ -1761,7 +1824,7 @@ void SavedGame::getAvailableResearchProjects(std::vector<RuleResearch *> &projec
 			{
 				// This research topic still has some more undiscovered non-disabled and *AVAILABLE* "getOneFree" topics, keep it!
 			}
-			else if (hasUndiscoveredProtectedUnlock(research, mod))
+			else if (hasUndiscoveredProtectedUnlock(research))
 			{
 				// This research topic still has one or more undiscovered non-disabled "protected unlocks", keep it!
 			}
@@ -2108,10 +2171,9 @@ bool SavedGame::hasUndiscoveredGetOneFree(const RuleResearch * r, bool checkOnly
 /**
  * Returns if a research still has undiscovered non-disabled "protected unlocks".
  * @param r Research to check.
- * @param mod the Game Mod
  * @return Whether it has any undiscovered non-disabled "protected unlocks" or not.
  */
-bool SavedGame::hasUndiscoveredProtectedUnlock(const RuleResearch * r, const Mod * mod) const
+bool SavedGame::hasUndiscoveredProtectedUnlock(const RuleResearch * r) const
 {
 	// Note: checking for not yet discovered unlocks protected by "requires" (which also implies cost = 0)
 	for (const auto* unlock : r->getUnlocked())
@@ -2210,17 +2272,27 @@ bool SavedGame::isResearched(const std::vector<const RuleResearch *> &research, 
 }
 
 /**
- * Returns if a certain item has been obtained, i.e. is present directly in the base stores.
- * Items in and on craft, in transfer, worn by soldiers, etc. are ignored!!
+ * Returns if a certain item has been obtained, i.e. is present in the base stores or on a craft.
+ * Items in transfer, worn by soldiers, etc. are ignored!!
  * @param itemType Item ID.
  * @return Whether it's obtained or not.
  */
-bool SavedGame::isItemObtained(const std::string &itemType) const
+bool SavedGame::isItemObtained(const std::string &itemType, const Mod* mod) const
 {
-	for (auto* xbase : _bases)
+	const RuleItem* item = mod->getItem(itemType);
+	if (item)
 	{
-		if (xbase->getStorageItems()->getItem(itemType) > 0)
-			return true;
+		for (auto* xbase : _bases)
+		{
+			if (xbase->getStorageItems()->getItem(item) > 0)
+				return true;
+
+			for (auto* xcraft : *xbase->getCrafts())
+			{
+				if (xcraft->getItems()->getItem(item) > 0)
+					return true;
+			}
+		}
 	}
 	return false;
 }
@@ -3319,7 +3391,7 @@ void SavedGame::handlePrimaryResearchSideEffects(const std::vector<const RuleRes
 					{
 						// This research topic still has some more undiscovered non-disabled and *AVAILABLE* "getOneFree" topics, keep it!
 					}
-					else if (hasUndiscoveredProtectedUnlock(myResearchRule, mod))
+					else if (hasUndiscoveredProtectedUnlock(myResearchRule))
 					{
 						// This research topic still has one or more undiscovered non-disabled "protected unlocks", keep it!
 					}
@@ -3425,6 +3497,18 @@ void randomRangeSymmetricScript(RNG::RandomState* rs, int& val, int max)
 	if (rs && max >= 0)
 	{
 		val = rs->generate(-max, max);
+	}
+	else
+	{
+		val = 0;
+	}
+}
+
+void difficultyLevelScript(const SavedGame* sg, int& val)
+{
+	if (sg)
+	{
+		val = sg->getDifficulty();
 	}
 	else
 	{
@@ -3595,6 +3679,8 @@ void SavedGame::ScriptRegister(ScriptParserBase* parser)
 
 	sgg.add<&getTimeScript>("getTime", "Get global time that is Greenwich Mean Time");
 	sgg.add<&getRandomScript>("getRandomState");
+
+	sgg.add<&difficultyLevelScript>("difficultyLevel", "Get difficulty level");
 
 	sgg.add<&isResearchedScript>("isResearched");
 

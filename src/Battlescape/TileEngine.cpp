@@ -919,6 +919,8 @@ TileEngine::TileEngine(SavedBattleGame *save, Mod *mod) :
 		// persisted per battle
 		_personalLighting = _save->getTogglePersonalLight();
 	}
+
+	_save->setTogglePersonalLightTemp(_personalLighting);
 }
 
 /**
@@ -1859,7 +1861,7 @@ bool TileEngine::visible(BattleUnit *currentUnit, Tile *tile)
 	}
 
 	// psi vision
-	int psiVisionDistance = currentUnit->getArmor()->getPsiVision();
+	int psiVisionDistance = currentUnit->getPsiVision();
 	bool fearImmune = tile->getUnit()->getArmor()->getFearImmune();
 	if (psiVisionDistance > 0 && !fearImmune)
 	{
@@ -1885,10 +1887,10 @@ bool TileEngine::visible(BattleUnit *currentUnit, Tile *tile)
 	Position scanVoxel;
 	bool unitSeen = canTargetUnit(&originVoxel, tile, &scanVoxel, currentUnit, false);
 
-	// heat vision 100% = smoke effectiveness 0%
-	int smokeDensityFactor = 100 - currentUnit->getArmor()->getHeatVision();
 	// heat vision should be blind by looking directly through fire
-	int fireDensityFactor = currentUnit->getArmor()->getHeatVision();
+	int fireDensityFactor = Clamp(currentUnit->getHeatVision(), 0, 100);
+	// heat vision 100% = smoke effectiveness 0%
+	int smokeDensityFactor = 100 - fireDensityFactor;
 
 	if (unitSeen)
 	{
@@ -4643,6 +4645,7 @@ void TileEngine::togglePersonalLighting()
 		_save->setTogglePersonalLight(_personalLighting);
 	}
 
+	_save->setTogglePersonalLightTemp(_personalLighting);
 	calculateLighting(LL_UNITS);
 	recalculateFOV();
 }

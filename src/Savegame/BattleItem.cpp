@@ -20,6 +20,7 @@
 #include "BattleItem.h"
 #include "BattleUnit.h"
 #include "Tile.h"
+#include "SavedGame.h"
 #include "SavedBattleGame.h"
 #include "../Mod/Mod.h"
 #include "../Mod/RuleItem.h"
@@ -1494,6 +1495,13 @@ void setStimulantQuantityScript(BattleItem* bt, int i)
 	}
 }
 
+
+void commonBattleItemAnimations(ScriptParserBase* parser)
+{
+	SavedBattleGame::ScriptRegisterUnitAnimations(parser);
+}
+
+
 } // namespace
 
 /**
@@ -1530,6 +1538,7 @@ void BattleItem::ScriptRegister(ScriptParserBase* parser)
 	bi.add<&BattleItem::isAmmo>("isAmmo");
 	bi.add<&BattleItem::isSpecialWeapon>("isSpecialWeapon");
 
+	bi.add<&BattleItem::getRules, &RuleItem::getClipSize>("getAmmoQuantityMax");
 	bi.add<&BattleItem::getAmmoQuantity>("getAmmoQuantity");
 	bi.add<&setAmmoQuantityScript>("setAmmoQuantity");
 
@@ -1598,6 +1607,7 @@ ModScript::RecolorItemParser::RecolorItemParser(ScriptGlobal* shared, const std:
 	BindBase b { this };
 
 	commonImpl(b, mod);
+	commonBattleItemAnimations(this);
 
 	setDefault("add_shade new_pixel shade; return new_pixel;");
 }
@@ -1614,6 +1624,7 @@ ModScript::SelectItemParser::SelectItemParser(ScriptGlobal* shared, const std::s
 	BindBase b { this };
 
 	commonImpl(b, mod);
+	commonBattleItemAnimations(this);
 
 	setDefault("add sprite_index sprite_offset; return sprite_index;");
 }
@@ -1737,6 +1748,33 @@ ModScript::TryMeleeAttackItemParser::TryMeleeAttackItemParser(ScriptGlobal* shar
 		"add melee_attack_success defense_strength_penalty;\n"
 		"return melee_attack_success;\n"
 	);
+}
+
+ModScript::SellCostItemParser::SellCostItemParser(ScriptGlobal* shared, const std::string& name, Mod* mod) : ScriptParserEvents{ shared, name,
+	"cost_current",
+	"cost_base",
+
+	"item_rule",
+	"geoscape_game",
+	"difficulty_coefficient"
+}
+{
+	BindBase b { this };
+
+	b.addCustomPtr<const Mod>("rules", mod);
+}
+ModScript::BuyCostItemParser::BuyCostItemParser(ScriptGlobal* shared, const std::string& name, Mod* mod) : ScriptParserEvents{ shared, name,
+	"cost_current",
+	"cost_base",
+
+	"item_rule",
+	"geoscape_game",
+	"difficulty_coefficient"
+}
+{
+	BindBase b { this };
+
+	b.addCustomPtr<const Mod>("rules", mod);
 }
 
 /**

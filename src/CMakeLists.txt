@@ -44,6 +44,7 @@ set ( basescape_src
   Basescape/SoldierArmorState.cpp
   Basescape/SoldierAvatarState.cpp
   Basescape/SoldierBonusState.cpp
+  Basescape/SoldierDiaryLightState.cpp
   Basescape/SoldierDiaryMissionState.cpp
   Basescape/SoldierDiaryOverviewState.cpp
   Basescape/SoldierDiaryPerformanceState.cpp
@@ -85,6 +86,7 @@ set ( battlescape_src
   Battlescape/CommendationState.cpp
   Battlescape/ConfirmEndMissionState.cpp
   Battlescape/DebriefingState.cpp
+  Battlescape/ExperienceOverviewState.cpp
   Battlescape/Explosion.cpp
   Battlescape/ExplosionBState.cpp
   Battlescape/ExtendedBattlescapeLinksState.cpp
@@ -104,6 +106,7 @@ set ( battlescape_src
   Battlescape/MiniMapState.cpp
   Battlescape/MiniMapView.cpp
   Battlescape/NextTurnState.cpp
+  Battlescape/NoExperienceState.cpp
   Battlescape/Particle.cpp
   Battlescape/Pathfinding.cpp
   Battlescape/PathfindingNode.cpp
@@ -332,6 +335,7 @@ set ( mod_src
   Mod/RuleTerrain.cpp
   Mod/RuleUfo.cpp
   Mod/RuleVideo.cpp
+  Mod/RuleWeaponSet.cpp
   Mod/SoldierNamePool.cpp
   Mod/SoundDefinition.cpp
   Mod/StatString.cpp
@@ -517,9 +521,12 @@ set ( openxcom_src ${c_src} ${cxx_src} ${embed_src} )
 set ( install_dest RUNTIME )
 set ( set_exec_path ON )
 set ( install_dest_dir bin )
+if ( NOT "${DATADIR}" STREQUAL "" )
+  add_definitions( -DDATADIR="${DATADIR}" )
+endif ()
 if ( UNIX AND NOT APPLE )
   set ( data_install_dir "${CMAKE_INSTALL_FULL_DATADIR}/openxcom" )
-  set_property ( SOURCE main.cpp APPEND PROPERTY COMPILE_DEFINITIONS DATADIR="${data_install_dir}/" )
+  set_property ( SOURCE main.cpp APPEND PROPERTY COMPILE_DEFINITIONS INSTALLDIR="${data_install_dir}/" )
 endif ()
 if ( APPLE )
   set ( sdl_src "${MACOS_SDLMAIN_M_PATH}" )
@@ -546,7 +553,7 @@ if ( APPLE )
     endif ()
   else ()
     set ( data_install_dir "${CMAKE_INSTALL_FULL_DATADIR}/openxcom" )
-    add_definitions( -DDATADIR="${data_install_dir}/" )
+    add_definitions( -DINSTALLDIR="${data_install_dir}/" )
   endif ()
 endif ()
 if ( set_exec_path )

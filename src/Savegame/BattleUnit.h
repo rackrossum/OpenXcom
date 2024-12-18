@@ -105,6 +105,7 @@ private:
 	UnitStats _exp, _expTmp;
 	int _motionPoints;
 	int _scannedTurn;
+	int _customMarker;
 	int _kills;
 	int _faceDirection; // used only during strafing moves
 	std::vector<int> _meleeAttackedBy;
@@ -141,6 +142,8 @@ private:
 	int _intelligence, _aggression;
 	int _maxViewDistanceAtDark, _maxViewDistanceAtDay;
 	int _maxViewDistanceAtDarkSquared;
+	int _psiVision = 0;
+	int _heatVision = 0;
 	SpecialAbility _specab;
 	Armor *_armor;
 	SoldierGender _gender;
@@ -370,7 +373,7 @@ public:
 	/// Calculate psi attack accuracy.
 	static int getPsiAccuracy(BattleActionAttack::ReadOnly attack);
 	/// Calculate firing accuracy.
-	static int getFiringAccuracy(BattleActionAttack::ReadOnly attack, Mod *mod);
+	static int getFiringAccuracy(BattleActionAttack::ReadOnly attack, const Mod *mod);
 	/// Calculate accuracy modifier.
 	int getAccuracyModifier(const BattleItem *item = 0) const;
 	/// Get the current reaction score.
@@ -435,7 +438,7 @@ public:
 	/// Gets the item in the main hand.
 	BattleItem *getMainHandWeapon(bool quickest = true, bool reactions = false) const;
 	/// Gets a grenade from the belt, if any.
-	BattleItem *getGrenadeFromBelt() const;
+	BattleItem *getGrenadeFromBelt(const SavedBattleGame* battle) const;
 	/// Gets the item from right hand.
 	BattleItem *getRightHandWeapon() const;
 	/// Gets the item from left hand.
@@ -526,12 +529,18 @@ public:
 	int getScannedTurn() const { return _scannedTurn; }
 	/// Set turn when unit was scanned by the motion scanner.
 	void setScannedTurn(int turn) { _scannedTurn = turn; }
+	/// Get unit custom marker.
+	int getCustomMarker() const { return _customMarker; }
+	/// Set unit custom marker.
+	void setCustomMarker(int customMarker) { _customMarker = customMarker; }
 	/// Gets the unit's armor.
 	const Armor *getArmor() const;
 	/// Sets the unit's name.
 	void setName(const std::string &name);
 	/// Gets the unit's name.
 	std::string getName(Language *lang, bool debugAppendId = false) const;
+	/// Gets the unit's gained experience points.
+	const UnitStats* getExpStats() const { return &_exp; }
 	/// Gets the unit's stats.
 	UnitStats *getBaseStats();
 	/// Gets the unit's stats.
@@ -574,16 +583,21 @@ public:
 	int getIntelligence() const;
 	/// Get the unit's aggression.
 	int getAggression() const;
+	/// Get the units's special ability.
+	int getSpecialAbility() const;
+
 	/// Helper method.
 	int getMaxViewDistance(int baseVisibility, int nerf, int buff) const;
 	/// Get maximum view distance at dark.
 	int getMaxViewDistanceAtDark(const BattleUnit* otherUnit) const;
+	/// Max view distance at dark squared.
 	int getMaxViewDistanceAtDarkSquared() const;
 	/// Get maximum view distance at day.
 	int getMaxViewDistanceAtDay(const BattleUnit* otherUnit) const;
-	/// Get the units's special ability.
-	int getSpecialAbility() const;
-
+	/// Get unit psi vision with bonuses.
+	int getPsiVision() const { return _psiVision; }
+	/// Get unit heat vision with bonuses.
+	int getHeatVision() const { return _heatVision; }
 
 	/// Gets the unit's spawn unit.
 	const Unit *getSpawnUnit() const;
