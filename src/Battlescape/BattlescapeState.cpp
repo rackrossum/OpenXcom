@@ -35,6 +35,8 @@
 #include "BattlescapeGame.h"
 #include "WarningMessage.h"
 #include "InfoboxState.h"
+#include "NoExperienceState.h"
+#include "ExperienceOverviewState.h"
 #include "TurnDiaryState.h"
 #include "DebriefingState.h"
 #include "MiniMapState.h"
@@ -433,11 +435,13 @@ BattlescapeState::BattlescapeState() :
 	_icons->onMouseOut((ActionHandler)&BattlescapeState::mouseOutIcons);
 
 	_btnUnitUp->onMouseClick((ActionHandler)&BattlescapeState::btnUnitUpClick);
+	_btnUnitUp->onKeyboardPress((ActionHandler)&BattlescapeState::btnUnitUpClick, Options::keyBattleUnitUp);
 	_btnUnitUp->setTooltip("STR_UNIT_LEVEL_ABOVE");
 	_btnUnitUp->onMouseIn((ActionHandler)&BattlescapeState::txtTooltipIn);
 	_btnUnitUp->onMouseOut((ActionHandler)&BattlescapeState::txtTooltipOut);
 
 	_btnUnitDown->onMouseClick((ActionHandler)&BattlescapeState::btnUnitDownClick);
+	_btnUnitDown->onKeyboardPress((ActionHandler)&BattlescapeState::btnUnitDownClick, Options::keyBattleUnitDown);
 	_btnUnitDown->setTooltip("STR_UNIT_LEVEL_BELOW");
 	_btnUnitDown->onMouseIn((ActionHandler)&BattlescapeState::txtTooltipIn);
 	_btnUnitDown->onMouseOut((ActionHandler)&BattlescapeState::txtTooltipOut);
@@ -1308,7 +1312,7 @@ void BattlescapeState::selectNextPlayerUnit(bool checkReselect, bool setReselect
 	{
 		BattleUnit *unit = _save->selectNextPlayerUnit(checkReselect, setReselect, checkInventory);
 		updateSoldierInfo(checkFOV);
-		if (unit) _map->getCamera()->centerOnPosition(unit->getPosition());
+		if (unit && !_game->isShiftPressed(true)) _map->getCamera()->centerOnPosition(unit->getPosition());
 		_battleGame->cancelAllActions();
 		_battleGame->getCurrentAction()->actor = unit;
 		_battleGame->setupCursor();
@@ -1327,7 +1331,7 @@ void BattlescapeState::selectPreviousPlayerUnit(bool checkReselect, bool setRese
 	{
 		BattleUnit *unit = _save->selectPreviousPlayerUnit(checkReselect, setReselect, checkInventory);
 		updateSoldierInfo();
-		if (unit) _map->getCamera()->centerOnPosition(unit->getPosition());
+		if (unit && !_game->isShiftPressed(true)) _map->getCamera()->centerOnPosition(unit->getPosition());
 		_battleGame->cancelAllActions();
 		_battleGame->getCurrentAction()->actor = unit;
 		_battleGame->setupCursor();
@@ -2629,6 +2633,19 @@ inline void BattlescapeState::handle(Action *action)
 				bool shiftPressed = _game->isShiftPressed();
 				bool altPressed = _game->isAltPressed();
 
+				// "shift-hotkey" - select without centering
+				if (shiftPressed)
+				{
+					if (key == Options::keyBattleNextUnit)
+					{
+						btnNextSoldierClick(action);
+					}
+					else if (key == Options::keyBattlePrevUnit)
+					{
+						btnPrevSoldierClick(action);
+					}
+				}
+
 				// "ctrl-b" - reopen briefing
 				if (key == SDLK_b && ctrlPressed)
 				{
@@ -2668,6 +2685,22 @@ inline void BattlescapeState::handle(Action *action)
 				{
 					_map->toggleDebugVisionMode();
 				}
+				// "ctrl-s" - switch xcom unit speed to max and back
+				else if (key == SDLK_s && ctrlPressed)
+				{
+					if (Options::battleXcomSpeedOrig >= 1 && Options::battleXcomSpeedOrig <= 40)
+					{
+						Options::battleXcomSpeed = Options::battleXcomSpeedOrig;
+						Options::battleXcomSpeedOrig = -1;
+						warning("STR_QUICK_MODE_DEACTIVATED");
+					}
+					else
+					{
+						Options::battleXcomSpeedOrig = Options::battleXcomSpeed;
+						Options::battleXcomSpeed = 1;
+						warningLongRaw(tr("STR_QUICK_MODE_ACTIVATED"));
+					}
+				}
 				// "ctrl-x" - mute/unmute unit response sounds
 				else if (key == SDLK_x && ctrlPressed)
 				{
@@ -2679,23 +2712,53 @@ inline void BattlescapeState::handle(Action *action)
 				// "ctrl-e" - experience log
 				else if (key == SDLK_e && ctrlPressed)
 				{
-					std::ostringstream ss;
-					ss << tr("STR_NO_EXPERIENCE_YET");
-					ss << "\n\n";
-					bool first = true;
-					for (auto* bu : *_save->getUnits())
+					if (altPressed)
 					{
-						if (bu->getOriginalFaction() == FACTION_PLAYER && !bu->isOut())
+						_game->pushState(new NoExperienceState());
+					}
+					else if (shiftPressed)
+					{
+						_game->pushState(new ExperienceOverviewState());
+					}
+					else
+					{
+						std::ostringstream ss;
+						ss << tr("STR_NO_EXPERIENCE_YET");
+						ss << "\n\n";
+						bool first = true;
+						for (auto* bu : *_save->getUnits())
 						{
-							if (bu->getGeoscapeSoldier() && !bu->hasGainedAnyExperience())
+							if (bu->getOriginalFaction() == FACTION_PLAYER && !bu->isOut())
 							{
-								if (!first) ss << ", ";
-								ss << bu->getName(_game->getLanguage());
-								first = false;
+								if (bu->getGeoscapeSoldier() && !bu->hasGainedAnyExperience())
+								{
+									if (!first) ss << ", ";
+									ss << bu->getName(_game->getLanguage());
+									first = false;
+								}
 							}
 						}
+						_game->pushState(new InfoboxState(ss.str()));
 					}
-					_game->pushState(new InfoboxState(ss.str()));
+				}
+				// "alt-c" - custom marker
+				else if (key == SDLK_c && altPressed)
+				{
+					BattleUnit* unitUnderTheCursor = nullptr;
+					{
+						Position newPos;
+						_map->getSelectorPosition(&newPos);
+						Tile* tile = _save->getTile(newPos);
+						if (tile)
+						{
+							unitUnderTheCursor = tile->getOverlappingUnit(_save);
+						}
+					}
+					// mark a friendly unit under the cursor
+					if (unitUnderTheCursor && unitUnderTheCursor->getFaction() == FACTION_PLAYER && !unitUnderTheCursor->isOut())
+					{
+						unitUnderTheCursor->setCustomMarker((unitUnderTheCursor->getCustomMarker() + 1) % 5); // rotate 4 colors + turned off
+					}
 				}
 				// "ctrl-m" - melee damage preview
 				else if (key == SDLK_m && ctrlPressed)

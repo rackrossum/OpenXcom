@@ -207,7 +207,7 @@ CraftEquipmentState::CraftEquipmentState(Base *base, size_t craft) :
 
 	_btnQuickSearch->setText(""); // redraw
 	_btnQuickSearch->onEnter((ActionHandler)&CraftEquipmentState::btnQuickSearchApply);
-	_btnQuickSearch->setVisible(false);
+	_btnQuickSearch->setVisible(Options::oxceQuickSearchButton);
 
 	_btnOk->onKeyboardRelease((ActionHandler)&CraftEquipmentState::btnQuickSearchToggle, Options::keyToggleQuickSearch);
 
@@ -1124,7 +1124,7 @@ void CraftEquipmentState::loadGlobalLoadout(int index, bool onlyAddItems)
 */
 void CraftEquipmentState::btnLoadClick(Action *)
 {
-	if (!_isNewBattle)
+	//if (!_isNewBattle)
 	{
 		_game->pushState(new CraftEquipmentLoadState(this));
 		_returningFromGlobalTemplates = true;

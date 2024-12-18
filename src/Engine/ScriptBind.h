@@ -251,6 +251,9 @@ struct ParserWriter
 	/// Add new reg arg.
 	ScriptRefData addReg(const ScriptRef& s, ArgEnum type);
 
+	/// Add new local const.
+	ScriptRefData addConst(const ScriptRef& s, ArgEnum type, ScriptValueData value);
+
 
 
 	/// Add new code scope.
@@ -991,16 +994,15 @@ struct BindMemberInvokeImpl //Work araound ICC 19.0.1 bug
 	template<typename T, typename... TRest>
 	static auto f(T&& a, TRest&&... b) -> decltype(auto)
 	{
-		using ReturnType = std::invoke_result_t<typename Ptr::Type, T, TRest...>;
-
-		ReturnType v = std::invoke(Ptr::val(), std::forward<T>(a), std::forward<TRest>(b)...);
 		if constexpr (sizeof...(Rest) > 0)
 		{
-			return BindMemberInvokeImpl<Rest...>::f(std::forward<ReturnType>(v));
+			return BindMemberInvokeImpl<Rest...>::f(
+				std::invoke(Ptr::val(), std::forward<T>(a), std::forward<TRest>(b)...)
+			);
 		}
 		else
 		{
-			return std::forward<ReturnType>(v);
+			return std::invoke(Ptr::val(), std::forward<T>(a), std::forward<TRest>(b)...);
 		}
 	}
 };
@@ -1312,6 +1314,94 @@ struct BindFunc : BindFuncImpl<decltype(F), F> //Work araound ICC 19.0.1 bug
 };
 
 
+template<typename T, auto Func, auto... X>
+struct BindListInitImpl
+{
+	static RetEnum func() = delete;
+};
+
+template<typename T, typename V, typename... Args, auto... X, bool (*Func)(T*, V* v, Args...)>
+struct BindListInitImpl<bool (*)(T*, V* v, Args...), Func, X...>
+{
+	static RetEnum func(T* t, Args... args, ScriptArgSeparator, int& curr, int& limit)
+	{
+		if (t)
+		{
+			auto& obj = BindMemberInvoke<X...>::f(t);
+			curr = 0;
+			limit = std::size(obj);
+			for (auto* u : obj)
+			{
+				if (Func(t, u, std::forward<Args>(args)...))
+				{
+					break;
+				}
+				++curr;
+			}
+		}
+		else
+		{
+			curr = 0;
+			limit = 0;
+		}
+		return RetContinue;
+	}
+};
+template<auto Func, auto... X>
+struct BindListInit : BindListInitImpl<decltype(Func), Func, X...>
+{
+
+};
+
+template<typename T, auto Func, auto... X>
+struct BindListLoopImpl
+{
+	static RetEnum func() = delete;
+};
+
+template<typename T, typename V, typename... Args, auto... X, bool (*Func)(T*, V* v, Args...)>
+struct BindListLoopImpl<bool (*)(T*, V* v, Args...), Func, X...>
+{
+	static RetEnum func(T* t, Args... args, ScriptArgSeparator, int& curr, int& limit, ScriptArgSeparator, V*& r)
+	{
+		if (t)
+		{
+			auto& obj = BindMemberInvoke<X...>::f(t);
+			size_t l = std::size(obj);
+			if ((size_t)curr < l)
+			{
+				r = obj[curr];
+			}
+			else
+			{
+				r = nullptr;
+			}
+			++curr;
+			for (;(size_t)curr < l; ++curr)
+			{
+				if (Func(t, obj[curr], std::forward<Args>(args)...))
+				{
+					break;
+				}
+			}
+		}
+		else
+		{
+			r = nullptr;
+			curr = 0;
+			limit = 0;
+		}
+		return RetContinue;
+	}
+};
+
+template<auto Func, auto... X>
+struct BindListLoop : BindListLoopImpl<decltype(Func), Func, X...>
+{
+
+};
+
+
 
 
 template<typename T, T X>
@@ -1585,6 +1675,13 @@ struct Bind : BindBase
 		add<Y>(get);
 	}
 
+	template<auto Func, auto... MemPtrR>
+	void addList(const std::string& name, const std::string& description = BindBase::functionWithoutDescription)
+	{
+		addCustomFunc<helper::BindListInit<MACRO_CLANG_AUTO_HACK(Func), MACRO_CLANG_AUTO_HACK(MemPtrR)...>>(getName(name) + ".init", BindBase::functionInvisible);
+		addCustomFunc<helper::BindListLoop<MACRO_CLANG_AUTO_HACK(Func), MACRO_CLANG_AUTO_HACK(MemPtrR)...>>(getName(name) + ".list", description);
+	}
+
 	template<auto X>
 	void add(const std::string& func, const std::string& description = BindBase::functionWithoutDescription)
 	{
@@ -1594,6 +1691,11 @@ struct Bind : BindBase
 	void add(const std::string& func, const std::string& description = BindBase::functionWithoutDescription)
 	{
 		addCustomFunc<helper::BindFunc<MACRO_CLANG_AUTO_HACK(X)>>(getName(func), description);
+	}
+	template<auto MemPtr0, auto MemPtr1, auto... MemPtrR>
+	void add(const std::string& func, const std::string& description = BindBase::functionWithoutDescription)
+	{
+		addCustomFunc<helper::BindPropGet<T, MACRO_CLANG_AUTO_HACK(MemPtr0), MACRO_CLANG_AUTO_HACK(MemPtr1), MACRO_CLANG_AUTO_HACK(MemPtrR)...>>(getName(func), description);
 	}
 };
 

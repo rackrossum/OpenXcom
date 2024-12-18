@@ -99,6 +99,7 @@ void SoldierDiary::load(const YAML::Node& node, const Mod *mod)
 	_shotAtCounter10in1Mission = node["shotAtCounter10in1Mission"].as<int>(_shotAtCounter10in1Mission);
 	_hitCounter5in1Mission = node["hitCounter5in1Mission"].as<int>(_hitCounter5in1Mission);
 	_timesWoundedTotal = node["timesWoundedTotal"].as<int>(_timesWoundedTotal);
+	_KIA = node["killedInAction"].as<int>(_KIA);
 	_allAliensKilledTotal = node["allAliensKilledTotal"].as<int>(_allAliensKilledTotal);
 	_allAliensStunnedTotal = node["allAliensStunnedTotal"].as<int>(_allAliensStunnedTotal);
 	_woundsHealedTotal = node["woundsHealedTotal"].as<int>(_woundsHealedTotal);
@@ -112,6 +113,7 @@ void SoldierDiary::load(const YAML::Node& node, const Mod *mod)
 	_wholeMedikitTotal = node["wholeMedikitTotal"].as<int>(_wholeMedikitTotal);
 	_braveryGainTotal = node["braveryGainTotal"].as<int>(_braveryGainTotal);
 	_bestOfRank = node["bestOfRank"].as<int>(_bestOfRank);
+	_MIA = node["missingInAction"].as<int>(_MIA);
 	_bestSoldier = node["bestSoldier"].as<bool>(_bestSoldier);
 	_martyrKillsTotal = node["martyrKillsTotal"].as<int>(_martyrKillsTotal);
 	_postMortemKills = node["postMortemKills"].as<int>(_postMortemKills);
@@ -151,6 +153,7 @@ YAML::Node SoldierDiary::save() const
 	if (_shotAtCounter10in1Mission) node["shotAtCounter10in1Mission"] = _shotAtCounter10in1Mission;
 	if (_hitCounter5in1Mission) node["hitCounter5in1Mission"] = _hitCounter5in1Mission;
 	if (_timesWoundedTotal) node["timesWoundedTotal"] = _timesWoundedTotal;
+	if (_KIA) node["killedInAction"] = _KIA;
 	if (_allAliensKilledTotal) node["allAliensKilledTotal"] = _allAliensKilledTotal;
 	if (_allAliensStunnedTotal) node["allAliensStunnedTotal"] = _allAliensStunnedTotal;
 	if (_woundsHealedTotal) node["woundsHealedTotal"] = _woundsHealedTotal;
@@ -164,6 +167,7 @@ YAML::Node SoldierDiary::save() const
 	if (_wholeMedikitTotal) node["wholeMedikitTotal"] = _wholeMedikitTotal;
 	if (_braveryGainTotal) node["braveryGainTotal"] = _braveryGainTotal;
 	if (_bestOfRank) node["bestOfRank"] = _bestOfRank;
+	if (_MIA) node["missingInAction"] = _MIA;
 	if (_bestSoldier) node["bestSoldier"] = _bestSoldier;
 	if (_martyrKillsTotal) node["martyrKillsTotal"] = _martyrKillsTotal;
 	if (_postMortemKills) node["postMortemKills"] = _postMortemKills;
@@ -181,6 +185,7 @@ void SoldierDiary::updateDiary(BattleUnitStatistics *unitStatistics, std::vector
 {
 	if (allMissionStatistics->empty()) return;
 	auto* missionStatistics = allMissionStatistics->back();
+	_missionIdList.push_back(missionStatistics->id);
 	auto& unitKills = unitStatistics->kills;
 	for (auto* buk : unitKills)
 	{
@@ -224,7 +229,7 @@ void SoldierDiary::updateDiary(BattleUnitStatistics *unitStatistics, std::vector
 		_allUFOs = 1;
 	if ((getUFOTotal(allMissionStatistics).size() + getTypeTotal(allMissionStatistics).size()) == (rules->getUfosList().size() + rules->getDeploymentsList().size() - 2))
 		_allMissionTypes = 1;
-	if (getCountryTotal(allMissionStatistics).size() == rules->getCountriesList().size())
+	if (getCountryTotal(allMissionStatistics).size() == 1 + rules->getCountriesList().size())
 		_globeTrotter = true;
 	_martyrKillsTotal += unitStatistics->martyr;
 	_slaveKillsTotal += unitStatistics->slaveKills;
@@ -250,7 +255,6 @@ void SoldierDiary::updateDiary(BattleUnitStatistics *unitStatistics, std::vector
 	_revivedNeutralTotal += unitStatistics->revivedNeutral;
 	_revivedHostileTotal += unitStatistics->revivedHostile;
 	_wholeMedikitTotal += std::min( std::min(unitStatistics->woundsHealed, unitStatistics->appliedStimulant), unitStatistics->appliedPainKill);
-	_missionIdList.push_back(missionStatistics->id);
 }
 
 /**

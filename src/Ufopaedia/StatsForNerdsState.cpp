@@ -94,6 +94,23 @@ const std::map<std::string, std::string> StatsForNerdsState::translationMap =
 	{ "stunNormalized", "STR_STUN_LEVEL_NORMALIZED" }, // new
 
 	{ "energyRegen", "STR_ENERGY_REGENERATION" }, // new, special stat returning vanilla energy regen
+
+	{ "tuScaled", "STR_TIME_UNITS_SCALED" },
+	{ "staminaScaled", "STR_STAMINA_SCALED" },
+	{ "healthScaled", "STR_HEALTH_SCALED" },
+	{ "braveryScaled", "STR_BRAVERY_SCALED" },
+	{ "reactionsScaled", "STR_REACTIONS_SCALED" },
+	{ "firingScaled", "STR_FIRING_ACCURACY_SCALED" },
+	{ "throwingScaled", "STR_THROWING_ACCURACY_SCALED" },
+	{ "strengthScaled", "STR_STRENGTH_SCALED" },
+	{ "psiStrengthScaled", "STR_PSIONIC_STRENGTH_SCALED" },
+	{ "psiSkillScaled", "STR_PSIONIC_SKILL_SCALED" },
+	{ "meleeScaled", "STR_MELEE_ACCURACY_SCALED" },
+	{ "manaScaled", "STR_MANA_POOL_SCALED" },
+	{ "psiScaled", "STR_PSI_SKILL_AND_PSI_STRENGTH_SCALED" },
+	{ "strengthMeleeScaled", "STR_STRENGTH_AND_MELEE_ACCURACY_SCALED" },
+	{ "strengthThrowingScaled", "STR_STRENGTH_AND_THROWING_ACCURACY_SCALED" },
+	{ "firingReactionsScaled", "STR_FIRING_ACCURACY_AND_REACTIONS_SCALED" },
 };
 
 const std::map<std::string, std::string> StatsForNerdsState::shortTranslationMap =
@@ -135,6 +152,23 @@ const std::map<std::string, std::string> StatsForNerdsState::shortTranslationMap
 	{ "stunNormalized", "STR_STUN_LEVEL_NORMALIZED_ABBREVIATION" }, // new
 
 	{ "energyRegen", "STR_ENERGY_REGENERATION_ABBREVIATION" }, // new, special stat returning vanilla energy regen
+
+	{ "tuScaled", "STR_TIME_UNITS_SCALED_ABBREVIATION" },
+	{ "staminaScaled", "STR_STAMINA_SCALED_ABBREVIATION" },
+	{ "healthScaled", "STR_HEALTH_SCALED_ABBREVIATION" },
+	{ "braveryScaled", "STR_BRAVERY_SCALED_ABBREVIATION" },
+	{ "reactionsScaled", "STR_REACTIONS_SCALED_ABBREVIATION" },
+	{ "firingScaled", "STR_FIRING_ACCURACY_SCALED_ABBREVIATION" },
+	{ "throwingScaled", "STR_THROWING_ACCURACY_SCALED_ABBREVIATION" },
+	{ "strengthScaled", "STR_STRENGTH_SCALED_ABBREVIATION" },
+	{ "psiStrengthScaled", "STR_PSIONIC_STRENGTH_SCALED_ABBREVIATION" },
+	{ "psiSkillScaled", "STR_PSIONIC_SKILL_SCALED_ABBREVIATION" },
+	{ "meleeScaled", "STR_MELEE_ACCURACY_SCALED_ABBREVIATION" },
+	{ "manaScaled", "STR_MANA_POOL_SCALED_ABBREVIATION" },
+	{ "psiScaled", "STR_PSI_SKILL_AND_PSI_STRENGTH_SCALED_ABBREVIATION" },
+	{ "strengthMeleeScaled", "STR_STRENGTH_AND_MELEE_ACCURACY_SCALED_ABBREVIATION" },
+	{ "strengthThrowingScaled", "STR_STRENGTH_AND_THROWING_ACCURACY_SCALED_ABBREVIATION" },
+	{ "firingReactionsScaled", "STR_FIRING_ACCURACY_AND_REACTIONS_SCALED_ABBREVIATION" },
 };
 
 /**
@@ -2158,7 +2192,20 @@ void StatsForNerdsState::initItemList()
 	addVectorOfRulesId(ss, itemRule->getSupportedInventorySections(), "supportedInventorySections");
 
 	addDouble(ss, itemRule->getSize(), "size");
-	addInteger(ss, itemRule->getBuyCost(), "costBuy", 0, true);
+	if (_game->getSavedGame()->getBuyPriceCoefficient() == 100)
+	{
+		addInteger(ss, itemRule->getBuyCost(), "costBuy", 0, true);
+	}
+	else
+	{
+		addHeading("_calculatedValues", "STR_FOR_DIFFICULTY", true);
+		{
+			int adjustedCost = itemRule->getBuyCost() * _game->getSavedGame()->getBuyPriceCoefficient() / 100;
+			addInteger(ss, adjustedCost, "costBuy", 0, true);
+
+			endHeading();
+		}
+	}
 	addInteger(ss, itemRule->getMonthlyBuyLimit(), "monthlyBuyLimit");
 	addInteger(ss, itemRule->getTransferTime(), "transferTime", 24);
 	addInteger(ss, itemRule->getMonthlySalary(), "monthlySalary", 0, true);
@@ -2191,6 +2238,7 @@ void StatsForNerdsState::initItemList()
 		addSingleString(ss, itemRule->getNameAsAmmo(), "nameAsAmmo");
 		addInteger(ss, itemRule->getListOrder(), "listOrder");
 		addBoolean(ss, itemRule->getHidePower(), "hidePower");
+		addBoolean(ss, itemRule->getIgnoreAmmoPower(), "ignoreAmmoPower");
 
 		addSection("{Inventory}", "", _white);
 		addVectorOfIntegers(ss, itemRule->getCustomItemPreviewIndex(), "customItemPreviewIndex");
@@ -2221,6 +2269,8 @@ void StatsForNerdsState::initItemList()
 		addInteger(ss, itemRule->getRecoveryPoints(), "recoveryPoints");
 		addBoolean(ss, itemRule->isAlien(), "liveAlien");
 		addInteger(ss, itemRule->getPrisonType(), "prisonType");
+		addSingleString(ss, itemRule->getSellActionMessage(), "sellActionMessage");
+		addInteger(ss, itemRule->getVehicleFixedAmmoSlot(), "vehicleFixedAmmoSlot");
 
 		addSection("{Explosives}", "", _white);
 		addInteger(ss, itemRule->getPowerForAnimation(), "powerForAnimation");
@@ -2763,6 +2813,7 @@ void StatsForNerdsState::initArmorList()
 		addSection("{Naming}", "", _white);
 		addSingleString(ss, armorRule->getType(), "type");
 		addSingleString(ss, armorRule->getUfopediaType(), "ufopediaType");
+		addInteger(ss, armorRule->getListOrder(), "listOrder");
 		addRuleNamed(ss, armorRule->getRequiredResearch(), "requires");
 
 		addSection("{Recovery}", "", _white);
@@ -2923,6 +2974,9 @@ void StatsForNerdsState::initSoldierBonusList()
 	addInteger(ss, bonusRule->getUnderArmor(), "underArmor");
 
 	addInteger(ss, bonusRule->getVisibilityAtDark(), "visibilityAtDark");
+	addInteger(ss, bonusRule->getVisibilityAtDay(), "visibilityAtDay");
+	addInteger(ss, bonusRule->getPsiVision(), "getPsiVision");
+	addInteger(ss, bonusRule->getHeatVision(), "getHeatVision");
 
 	addHeading("recovery");
 	{

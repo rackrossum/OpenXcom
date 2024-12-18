@@ -50,6 +50,7 @@
 #include "../Mod/RuleItem.h"
 #include "../Mod/RuleSoldier.h"
 #include "../Mod/RuleSoldierBonus.h"
+#include "../Mod/RuleWeaponSet.h"
 #include "../fallthrough.h"
 #include "../fmath.h"
 #include "../Engine/Language.h"
@@ -1990,12 +1991,18 @@ void SavedBattleGame::initUnit(BattleUnit *unit, size_t itemLevel)
 		auto& buildin = rule->getBuiltInWeapons();
 		if (!buildin.empty())
 		{
-			if (itemLevel >= buildin.size())
-			{
-				itemLevel = buildin.size() -1;
-			}
+			int idx = itemLevel >= buildin.size() ? buildin.size() - 1 : itemLevel;
 			// Built in weapons: the unit has this weapon regardless of loadout or what have you.
-			addFixedItems(unit, buildin.at(itemLevel));
+			addFixedItems(unit, buildin.at(idx));
+		}
+
+		auto& buildin2 = rule->getWeightedBuiltInWeapons();
+		if (!buildin2.empty())
+		{
+			int idx2 = itemLevel >= buildin2.size() ? buildin2.size() - 1 : itemLevel;
+			auto* weights = buildin2.at(idx2);
+			auto* weaponSetRule = _rule->getWeaponSet(weights->choose());
+			addFixedItems(unit, weaponSetRule->getWeapons());
 		}
 
 		// terrorist alien's equipment is a special case - they are fitted with a weapon which is the alien's name with suffix _WEAPON
@@ -3609,6 +3616,24 @@ void getTileEditableScript(SavedBattleGame* sbg, Tile*& t, int x, int y, int z)
 	}
 }
 
+
+bool filterUnitScript(SavedBattleGame* sbg, BattleUnit* unit)
+{
+	return unit && !unit->isIgnored() && unit->getStatus() != STATUS_DEAD;
+}
+
+bool filterUnitFactionScript(SavedBattleGame* sbg, BattleUnit* unit, int i)
+{
+	return filterUnitScript(sbg, unit) && unit->getFaction() == i;
+}
+
+
+bool filterItemScript(SavedBattleGame* sbg, BattleItem* item)
+{
+	return item && !item->isOwnerIgnored();
+}
+
+
 void setAlienItemLevelScript(SavedBattleGame* sbg, int val)
 {
 	if (sbg)
@@ -3631,7 +3656,49 @@ void tryConcealUnitScript(SavedBattleGame* sbg, BattleUnit* bu, int& val)
 	{
 		val = sbg->getTileEngine()->tryConcealUnit(bu);
 	}
+	else
+	{
+		val = 0;
+	}
 }
+
+void isAltPressedScript(const SavedBattleGame* sbg, int& val)
+{
+	if (sbg)
+	{
+		val = sbg->isAltPressed(true);
+	}
+	else
+	{
+		val = 0;
+	}
+}
+
+void isCtrlPressedScript(const SavedBattleGame* sbg, int& val)
+{
+	if (sbg)
+	{
+		val = sbg->isCtrlPressed(true);
+	}
+	else
+	{
+		val = 0;
+	}
+}
+
+void isShiftPressedScript(const SavedBattleGame* sbg, int& val)
+{
+	if (sbg)
+	{
+		val = sbg->isShiftPressed(true);
+	}
+	else
+	{
+		val = 0;
+	}
+}
+
+
 
 std::string debugDisplayScript(const SavedBattleGame* p)
 {
@@ -3669,8 +3736,14 @@ void SavedBattleGame::ScriptRegister(ScriptParserBase* parser)
 
 	sbg.add<&SavedBattleGame::getTurn>("getTurn", "Current turn, 0 - before battle, 1 - first turn, each stage reset this value.");
 	sbg.add<&SavedBattleGame::getAnimFrame>("getAnimFrame");
+	sbg.add<&SavedBattleGame::getMapSizeX>("getSize.getX", "Get size in x direction");
+	sbg.add<&SavedBattleGame::getMapSizeY>("getSize.getY", "Get size in y direction");
+	sbg.add<&SavedBattleGame::getMapSizeZ>("getSize.getZ", "Get size in z direction");
 	sbg.add<&getTileScript>("getTile", "Get tile on position x, y, z");
 	sbg.add<&getTileEditableScript>("getTile", "Get tile on position x, y, z");
+	sbg.addList<&filterUnitScript, &SavedBattleGame::_units>("getUnits", "Get list of all units");
+	sbg.addList<&filterUnitFactionScript, &SavedBattleGame::_units>("getUnits.byFaction", "Get list of units from faction");
+	sbg.addList<&filterItemScript, &SavedBattleGame::_items>("getItems", "Get list of all items");
 
 	sbg.add<&SavedBattleGame::getAlienItemLevel>("getAlienItemLevel");
 	sbg.add<&setAlienItemLevelScript>("setAlienItemLevel");
@@ -3711,6 +3784,22 @@ void SavedBattleGame::ScriptRegister(ScriptParserBase* parser)
 	sbg.addCustomConst("DIFF_VETERAN", DIFF_VETERAN);
 	sbg.addCustomConst("DIFF_GENIUS", DIFF_GENIUS);
 	sbg.addCustomConst("DIFF_SUPERHUMAN", DIFF_SUPERHUMAN);
+}
+
+/**
+ * Register useful function used by graphic scripts.
+ */
+void SavedBattleGame::ScriptRegisterUnitAnimations(ScriptParserBase* parser)
+{
+	Bind<SavedBattleGame> sbg = { parser, BindBase::ExtensionBinding{} };
+
+	sbg.add<&isAltPressedScript>("isAltPressed");
+	sbg.add<&isCtrlPressedScript>("isCtrlPressed");
+	sbg.add<&isShiftPressedScript>("isShiftPressed");
+	sbg.addField<&SavedBattleGame::_toggleBrightnessTemp>("getDebugVisionMode");
+	sbg.addField<&SavedBattleGame::_toggleNightVisionTemp>("isNightVisionEnabled");
+	sbg.addField<&SavedBattleGame::_togglePersonalLightTemp>("isPersonalLightEnabled");
+	sbg.addField<&SavedBattleGame::_toggleNightVisionColorTemp>("getNightVisionColor");
 }
 
 }

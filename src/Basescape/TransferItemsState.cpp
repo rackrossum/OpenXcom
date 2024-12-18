@@ -256,7 +256,7 @@ TransferItemsState::TransferItemsState(Base *baseFrom, Base *baseTo, DebriefingS
 
 	_btnQuickSearch->setText(""); // redraw
 	_btnQuickSearch->onEnter((ActionHandler)&TransferItemsState::btnQuickSearchApply);
-	_btnQuickSearch->setVisible(false);
+	_btnQuickSearch->setVisible(Options::oxceQuickSearchButton);
 
 	_btnOk->onKeyboardRelease((ActionHandler)&TransferItemsState::btnQuickSearchToggle, Options::keyToggleQuickSearch);
 
@@ -524,6 +524,10 @@ void TransferItemsState::completeTransfer()
 					if (soldier == transferRow.rule)
 					{
 						soldier->setPsiTraining(false);
+						if (soldier->isInTraining())
+						{
+							soldier->setReturnToTrainingWhenHealed(true);
+						}
 						soldier->setTraining(false);
 						t = new Transfer(time);
 						t->setSoldier(soldier);
@@ -542,6 +546,10 @@ void TransferItemsState::completeTransfer()
 					if (soldier->getCraft() == craft)
 					{
 						soldier->setPsiTraining(false);
+						if (soldier->isInTraining())
+						{
+							soldier->setReturnToTrainingWhenHealed(true);
+						}
 						soldier->setTraining(false);
 						if (craft->getStatus() == "STR_OUT")
 						{

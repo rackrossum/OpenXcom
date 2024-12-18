@@ -67,7 +67,7 @@ BattleUnit::BattleUnit(const Mod *mod, Soldier *soldier, int depth, const RuleSt
 	_verticalDirection(0), _status(STATUS_STANDING), _wantsToSurrender(false), _isSurrendering(false), _walkPhase(0), _fallPhase(0), _kneeled(false), _floating(false),
 	_dontReselect(false), _fire(0), _currentAIState(0), _visible(false),
 	_exp{ }, _expTmp{ },
-	_motionPoints(0), _scannedTurn(-1), _kills(0), _hitByFire(false), _hitByAnything(false), _alreadyExploded(false), _fireMaxHit(0), _smokeMaxHit(0),
+	_motionPoints(0), _scannedTurn(-1), _customMarker(0), _kills(0), _hitByFire(false), _hitByAnything(false), _alreadyExploded(false), _fireMaxHit(0), _smokeMaxHit(0),
 	_moraleRestored(0), _charging(0), _turnsSinceSpotted(255), _turnsLeftSpottedForSnipers(0),
 	_statistics(), _murdererId(0), _mindControllerID(0), _fatalShotSide(SIDE_FRONT), _fatalShotBodyPart(BODYPART_HEAD), _armor(0),
 	_geoscapeSoldier(soldier), _unitRules(0), _rankInt(0), _turretType(-1), _hidingForTurn(false), _floorAbove(false), _respawn(false), _alreadyRespawned(false),
@@ -148,16 +148,24 @@ void BattleUnit::updateArmorFromSoldier(const Mod *mod, Soldier *soldier, Armor 
 		_stats = *soldier->getStatsWithAllBonuses();
 	}
 
-	int visibilityBonus = 0;
+	int visibilityDarkBonus = 0;
+	int visibilityDayBonus = 0;
+	int psiVision = 0;
+	int heatVision =  0;
 	for (const auto* bonusRule : *soldier->getBonuses(nullptr))
 	{
-		visibilityBonus += bonusRule->getVisibilityAtDark();
+		visibilityDarkBonus += bonusRule->getVisibilityAtDark();
+		visibilityDayBonus += bonusRule->getVisibilityAtDay();
+		psiVision += bonusRule->getPsiVision();
+		heatVision += bonusRule->getHeatVision();
 	}
 	_maxViewDistanceAtDark = _armor->getVisibilityAtDark() ? _armor->getVisibilityAtDark() : 9;
-	_maxViewDistanceAtDark += visibilityBonus;
-	_maxViewDistanceAtDark = Clamp(_maxViewDistanceAtDark, 1, mod->getMaxViewDistance());
+	_maxViewDistanceAtDark = Clamp(_maxViewDistanceAtDark + visibilityDarkBonus, 1, mod->getMaxViewDistance());
 	_maxViewDistanceAtDarkSquared = _maxViewDistanceAtDark * _maxViewDistanceAtDark;
 	_maxViewDistanceAtDay = _armor->getVisibilityAtDay() ? _armor->getVisibilityAtDay() : mod->getMaxViewDistance();
+	_maxViewDistanceAtDay = Clamp(_maxViewDistanceAtDay + visibilityDayBonus, 1, mod->getMaxViewDistance());
+	_psiVision = _armor->getPsiVision() + psiVision;
+	_heatVision = _armor->getHeatVision() + heatVision;
 
 
 	_maxArmor[SIDE_FRONT] = _armor->getFrontArmor();
@@ -391,7 +399,7 @@ BattleUnit::BattleUnit(const Mod *mod, Unit *unit, UnitFaction faction, int id, 
 	_toDirectionTurret(0), _verticalDirection(0), _status(STATUS_STANDING), _wantsToSurrender(false), _isSurrendering(false), _walkPhase(0),
 	_fallPhase(0), _kneeled(false), _floating(false), _dontReselect(false), _fire(0), _currentAIState(0),
 	_visible(false), _exp{ }, _expTmp{ },
-	_motionPoints(0), _scannedTurn(-1), _kills(0), _hitByFire(false), _hitByAnything(false), _alreadyExploded(false), _fireMaxHit(0), _smokeMaxHit(0),
+	_motionPoints(0), _scannedTurn(-1), _customMarker(0), _kills(0), _hitByFire(false), _hitByAnything(false), _alreadyExploded(false), _fireMaxHit(0), _smokeMaxHit(0),
 	_moraleRestored(0), _charging(0), _turnsSinceSpotted(255), _turnsLeftSpottedForSnipers(0),
 	_statistics(), _murdererId(0), _mindControllerID(0), _fatalShotSide(SIDE_FRONT),
 	_fatalShotBodyPart(BODYPART_HEAD), _armor(armor), _geoscapeSoldier(0),  _unitRules(unit),
@@ -493,6 +501,8 @@ void BattleUnit::updateArmorFromNonSoldier(const Mod* mod, Armor* newArmor, int 
 	_maxViewDistanceAtDark = _armor->getVisibilityAtDark() ? _armor->getVisibilityAtDark() : _originalFaction == FACTION_HOSTILE ? mod->getMaxViewDistance() : 9;
 	_maxViewDistanceAtDarkSquared = _maxViewDistanceAtDark * _maxViewDistanceAtDark;
 	_maxViewDistanceAtDay = _armor->getVisibilityAtDay() ? _armor->getVisibilityAtDay() : mod->getMaxViewDistance();
+	_psiVision = _armor->getPsiVision();
+	_heatVision =  _armor->getHeatVision();
 
 
 	_maxArmor[SIDE_FRONT] = _armor->getFrontArmor();
@@ -640,6 +650,7 @@ void BattleUnit::load(const YAML::Node &node, const Mod *mod, const ScriptGlobal
 	}
 
 	_motionPoints = node["motionPoints"].as<int>(0);
+	_customMarker = node["customMarker"].as<int>(0);
 	_alreadyRespawned = node["alreadyRespawned"].as<bool>(_alreadyRespawned);
 	_activeHand = node["activeHand"].as<std::string>(_activeHand);
 	_preferredHandForReactions = node["preferredHandForReactions"].as<std::string>(_preferredHandForReactions);
@@ -757,6 +768,8 @@ YAML::Node BattleUnit::save(const ScriptGlobal *shared) const
 	}
 
 	node["motionPoints"] = _motionPoints;
+	if (_customMarker > 0)
+		node["customMarker"] = _customMarker;
 	if (_alreadyRespawned)
 		node["alreadyRespawned"] = _alreadyRespawned;
 	node["activeHand"] = _activeHand;
@@ -1790,7 +1803,7 @@ int BattleUnit::damage(Position relative, int damage, const RuleDamageType *type
 
 		if (isWoundable())
 		{
-			setValueMax(_fatalWounds[bodypart], std::get<toWound>(args.data), 0, 100);
+			setValueMax(_fatalWounds[bodypart], std::get<toWound>(args.data), 0, UnitStats::BaseStatLimit);
 			moraleChange(-std::get<toWound>(args.data));
 		}
 
@@ -1889,9 +1902,9 @@ int BattleUnit::damage(Position relative, int damage, const RuleDamageType *type
 		if (rand.percent(std::get<arg_specialDamageTransformChance>(args.data)) && specialDamageTransform
 			&& !getSpawnUnit())
 		{
-			auto& typeName = specialDamageTransform->getZombieUnit(this);
-			auto* type = save->getMod()->getUnit(typeName);
-			if (type->getArmor()->getSize() <= getArmor()->getSize())
+			auto& spawnName = specialDamageTransform->getZombieUnit(this);
+			auto* spawnType = save->getMod()->getUnit(spawnName);
+			if (spawnType->getArmor()->getSize() <= getArmor()->getSize())
 			{
 				UnitFaction faction = specialDamageTransform->getZombieUnitFaction();
 				if (faction == FACTION_NONE)
@@ -1909,11 +1922,11 @@ int BattleUnit::damage(Position relative, int damage, const RuleDamageType *type
 				// converts the victim to a zombie on death
 				setRespawn(true);
 				setSpawnUnitFaction(faction);
-				setSpawnUnit(type);
+				setSpawnUnit(spawnType);
 			}
 			else
 			{
-				Log(LOG_ERROR) << "Transforming armor type '" << this->getArmor()->getType() << "' to unit type '" << typeName << "' is not allowed because of bigger armor size";
+				Log(LOG_ERROR) << "Transforming armor type '" << this->getArmor()->getType() << "' to unit type '" << spawnName << "' is not allowed because of bigger armor size";
 			}
 		}
 
@@ -2435,7 +2448,7 @@ int BattleUnit::getPsiAccuracy(BattleActionAttack::ReadOnly attack)
  * @param item
  * @return firing Accuracy
  */
-int BattleUnit::getFiringAccuracy(BattleActionAttack::ReadOnly attack, Mod *mod)
+int BattleUnit::getFiringAccuracy(BattleActionAttack::ReadOnly attack, const Mod *mod)
 {
 	auto actionType = attack.type;
 	auto item = attack.weapon_item;
@@ -3543,13 +3556,16 @@ BattleItem *BattleUnit::getMainHandWeapon(bool quickest, bool reactions) const
  * Get a grenade from the belt (used for AI)
  * @return Pointer to item.
  */
-BattleItem *BattleUnit::getGrenadeFromBelt() const
+BattleItem *BattleUnit::getGrenadeFromBelt(const SavedBattleGame* battle) const
 {
 	for (auto* bi : _inventory)
 	{
-		if (bi->getRules()->getBattleType() == BT_GRENADE)
+		if (bi->getRules()->isGrenadeOrProxy())
 		{
-			return bi;
+			if (battle->getTurn() >= bi->getRules()->getAIUseDelay(battle->getMod()))
+			{
+				return bi;
+			}
 		}
 	}
 	return 0;
@@ -4145,7 +4161,7 @@ void BattleUnit::setFatalWound(int wound, UnitBodyPart part)
 {
 	if (part < 0 || part >= BODYPART_MAX)
 		return;
-	_fatalWounds[part] = Clamp(wound, 0, 100);
+	_fatalWounds[part] = Clamp(wound, 0, UnitStats::BaseStatLimit);
 }
 
 /**
@@ -4161,7 +4177,7 @@ void BattleUnit::heal(UnitBodyPart part, int woundAmount, int healthAmount)
 		return;
 	}
 
-	setValueMax(_fatalWounds[part], -woundAmount, 0, 100);
+	setValueMax(_fatalWounds[part], -woundAmount, 0, UnitStats::BaseStatLimit);
 	setValueMax(_health, healthAmount, std::min(_health, 1), getBaseStats()->health); //Hippocratic Oath: First do no harm
 
 }
@@ -6220,6 +6236,10 @@ void getListSizeHackScript(BattleUnit* bu, int& i)
 	}
 }
 
+bool filterItemScript(BattleUnit* unit, BattleItem* item)
+{
+	return item;
+}
 
 std::string debugDisplayScript(const BattleUnit* bu)
 {
@@ -6310,10 +6330,12 @@ void BattleUnit::ScriptRegister(ScriptParserBase* parser)
 
 	bu.add<&BattleUnit::getVisible>("isVisible");
 	bu.add<&makeVisibleScript>("makeVisible");
+
 	bu.add<&BattleUnit::getMaxViewDistanceAtDark>("getMaxViewDistanceAtDark", "get maximum visibility distance in tiles to another unit at dark");
 	bu.add<&BattleUnit::getMaxViewDistanceAtDay>("getMaxViewDistanceAtDay", "get maximum visibility distance in tiles to another unit at day");
 	bu.add<&BattleUnit::getMaxViewDistance>("getMaxViewDistance", "calculate maximum visibility distance consider camouflage, first arg is base visibility, second arg is cammo reduction, third arg is anti-cammo boost");
-
+	bu.add<&BattleUnit::getPsiVision>("getPsiVision");
+	bu.add<&BattleUnit::getHeatVision>("getHeatVision");
 
 	bu.add<&setSpawnUnitScript>("setSpawnUnit", "set type of zombie will be spawn from current unit, it will reset everything to default (hostile & instant)");
 	bu.add<&getSpawnUnitScript>("getSpawnUnit", "get type of zombie will be spawn from current unit");
@@ -6415,8 +6437,10 @@ void BattleUnit::ScriptRegister(ScriptParserBase* parser)
 	bu.add<&getInventoryItemScript2>("getInventoryItem");
 	bu.add<&getListSizeScript<&BattleUnit::_inventory>>("getInventoryItem.size");
 	bu.add<&getListScript<&BattleUnit::_inventory>>("getInventoryItem");
+	bu.addList<&filterItemScript, &BattleUnit::_inventory>("getInventoryItem");
 	bu.add<&getListSizeHackScript<&BattleUnit::_specWeapon>>("getSpecialItem.size");
 	bu.add<&getListScript<&BattleUnit::_specWeapon>>("getSpecialItem");
+	bu.addList<&filterItemScript, &BattleUnit::_specWeapon>("getSpecialItem");
 
 	bu.add<&getPositionXScript>("getPosition.getX");
 	bu.add<&getPositionYScript>("getPosition.getY");
@@ -6555,10 +6579,12 @@ void commonBattleUnitAnimations(ScriptParserBase* parser)
 	bu.add<&BattleUnit::getFloorAbove>("isFloorAbove", "check if floor is shown above unit");
 	bu.add<&BattleUnit::getBreathExhaleFrame>("getBreathExhaleFrame", "return animation frame of breath bubbles, -1 means no animation");
 	bu.add<&BattleUnit::getBreathInhaleFrame>("getBreathInhaleFrame", "return number of frames to next breath animation start, 0 means animation started, -1 no animation");
+
+	SavedBattleGame::ScriptRegisterUnitAnimations(parser);
 }
 
 
-}
+} // namespace
 
 /**
  * Constructor of recolor script parser.

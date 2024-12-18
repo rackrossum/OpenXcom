@@ -197,13 +197,15 @@ namespace CrossPlatform
 	/// Searches the data folders and returns the full path for a folder
 	/// when given a relative path, like "common".  returns the passed-in
 	/// dir name if the folder is not found
-	std::string searchDataFolder(const std::string &foldername);
+	std::string searchDataFolder(const std::string &foldername, std::size_t size = 0);
 	/// Creates a folder.
 	bool createFolder(const std::string &path);
 	/// Terminates a path.
 	std::string convertPath(const std::string &path);
 	/// Returns the list of files in a folder as a vector of tuples (filename, id_dir, mtime)
 	std::vector<std::tuple<std::string, bool, time_t>> getFolderContents(const std::string &path, const std::string &ext = "");
+	/// Checks if the path has a minimum size (number of contents, not bytes).
+	bool folderMinSize(const std::string &path, std::size_t size);
 	/// Checks if the path is an existing folder.
 	bool folderExists(const std::string &path);
 	/// Checks if the path is an existing file.
@@ -212,6 +214,8 @@ namespace CrossPlatform
 	bool deleteFile(const std::string &path);
 	/// Gets the pathless filename of a file.
 	std::string baseFilename(const std::string &path);
+	/// Gets the pathless dir of a file.
+	std::string dirFilename(const std::string &path);
 	/// Sanitizes the characters in a filename.
 	std::string sanitizeFilename(const std::string &filename);
 	/// Removes the extension from a filename.
@@ -270,6 +274,10 @@ namespace CrossPlatform
 	bool isHigherThanCurrentVersion(const std::string& newVersion);
 	/// Is the given version number higher than the given version number?
 	bool isHigherThanCurrentVersion(const std::array<int, 4>& newVersion, const int (&ver)[4]);
+	/// Is the given version number lower than the minimum required version number?
+	bool isLowerThanRequiredVersion(const std::string& dataVersion);
+	/// Is the first version number lower than the second version number?
+	bool isLowerThanRequiredVersion(const std::array<int, 4>& dataVersion, const int(&ver)[4]);
 	/// Gets the path to the executable file.
 	std::string getExeFolder();
 	/// Gets the file name of the executable file.
