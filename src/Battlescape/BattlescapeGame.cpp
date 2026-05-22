@@ -2444,7 +2444,7 @@ void BattlescapeGame::spawnFromPrimedItems()
  */
 void BattlescapeGame::removeSummonedPlayerUnits()
 {
-	std::vector<Unit*> resummonAsCivilians;
+	std::vector<const Unit*> resummonAsCivilians;
 
 	auto buIt = _save->getUnits()->begin();
 	while (buIt != _save->getUnits()->end())
