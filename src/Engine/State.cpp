@@ -258,10 +258,14 @@ void State::remove(Surface* surface, bool del /*= true*/)
 
 	auto it = std::find(_surfaces.begin(), _surfaces.end(), surface);
 	if (it != _surfaces.end())
-	{
-		if (del)
-			delete *it;
 		_surfaces.erase(it);
+
+	auto it2 = std::find(_surfacesOwned.begin(), _surfacesOwned.end(), surface);
+	if (it2 != _surfacesOwned.end())
+	{
+		_surfacesOwned.erase(it2);
+		if (del)
+			delete surface;
 	}
 }
 
