@@ -21,6 +21,7 @@ set ( basescape_src
   Basescape/CraftWeaponsState.cpp
   Basescape/DismantleFacilityState.cpp
   Basescape/GlobalAlienContainmentState.cpp
+  Basescape/GlobalTransfersState.cpp
   Basescape/GlobalManufactureState.cpp
   Basescape/GlobalResearchDiaryState.cpp
   Basescape/GlobalResearchState.cpp
@@ -204,6 +205,7 @@ set ( geoscape_src
   Geoscape/FundingState.cpp
   Geoscape/GeoscapeCraftState.cpp
   Geoscape/GeoscapeEventState.cpp
+  Geoscape/GeoscapeGlobalTransfers.cpp
   Geoscape/GeoscapeState.cpp
   Geoscape/Globe.cpp
   Geoscape/GraphsState.cpp

@@ -64,6 +64,7 @@ ru:
   STR_DISCOVERY_SOURCE_EVENT: "Получено в результате события.{NEWLINE}Тип события> {ALT}{2}{ALT}{NEWLINE}{ALT}{1}{ALT} -> {ALT}{0}{ALT}"
   STR_RESEARCH_OVERVIEW: "ОБЗОР ИССЛЕДОВАНИЙ"
   STR_PRISONER_OVERVIEW: "ОБЗОР ПЛЕННЫХ"
+  STR_TRANSFER_OVERVIEW: "ТЕКУЩИЕ ПОСТАВКИ ХАБРА"
   STR_PRISONER: "ПЛЕННЫЙ"
   STR_PRISONER_AMOUNT: "КОЛ-ВО"
   STR_PRISONER_INTERROGATED: "ДОПРОШЕН"

@@ -127,6 +127,8 @@ public:
 	void btnGlobalResearchClick(Action *action);
 	/// Handler for clicking the [GlobalAlienContainment] key.
 	void btnGlobalAlienContainmentClick(Action *action);
+	/// Handler for clicking the [GlobalTransfers] key.
+	void btnGlobalTransfersClick(Action *action);
 	/// Handler for clicking the [DogfightExperience] key.
 	void btnDogfightExperienceClick(Action *action);
 	/// Handler for clicking the [Debug] key.

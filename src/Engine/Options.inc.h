@@ -43,7 +43,7 @@ keyBattleCenterEnemy1, keyBattleCenterEnemy2, keyBattleCenterEnemy3, keyBattleCe
 keyBattleCenterEnemy9, keyBattleCenterEnemy10, keyBattleVoxelView, keyBattleZeroTUs, keyInvCreateTemplate, keyInvApplyTemplate, keyInvClear, keyInvAutoEquip;
 
 // Extra hotkeys (OXCE)
-OPT SDLKey keyGeoDailyPilotExperience, keyGeoUfoTracker, keyGeoTechTreeViewer, keyGeoGlobalResearch, keyGeoGlobalProduction, keyGeoGlobalAlienContainment,
+OPT SDLKey keyGeoDailyPilotExperience, keyGeoUfoTracker, keyGeoTechTreeViewer, keyGeoGlobalResearch, keyGeoGlobalProduction, keyGeoGlobalAlienContainment, keyGeoGlobalTransfers,
 	keyGraphsZoomIn, keyGraphsZoomOut,
 	keyToggleQuickSearch, keyInstaSave,
 	keyCraftLoadoutSave, keyCraftLoadoutLoad,
