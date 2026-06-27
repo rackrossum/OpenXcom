@@ -63,6 +63,8 @@ public:
 	void btnPatrolClick(Action *action);
 	/// Handler for clicking the Cancel button.
 	void btnCancelClick(Action *action);
+	/// Handler for clicking a weapon name to toggle it on/off.
+	void txtWeaponClick(Action *action);
 };
 
 }
