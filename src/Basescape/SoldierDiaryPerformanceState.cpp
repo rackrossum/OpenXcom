@@ -420,7 +420,10 @@ void SoldierDiaryPerformanceState::drawSprites()
  */
 void SoldierDiaryPerformanceState::btnOkClick(Action *)
 {
-	_soldierDiaryOverviewState->setSoldierId(_soldierId);
+	if (_soldierDiaryOverviewState)
+	{
+		_soldierDiaryOverviewState->setSoldierId(_soldierId);
+	}
 	_game->popState();
 }
 
