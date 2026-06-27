@@ -2020,6 +2020,18 @@ void BattlescapeState::drawItem(BattleItem* item, Surface* hand, std::vector<Num
 				}
 			}
 		}
+		{
+			static const std::vector<std::string> shieldItemTypes = {
+				"STR_ENERGY_SHIELD_SMALL", "STR_REFRACTOR_SHIELD_SMALL",
+				"STR_ARCANE_SHIELD_SMALL", "STR_ENERGY_MATRIX_SMALL",
+				"AUX_ENERGY_SHIELD_FAKK", "AUX_GORGON_SHIELD", "STR_HELLFIST"
+			};
+			if (std::find(shieldItemTypes.begin(), shieldItemTypes.end(), rule->getType()) != shieldItemTypes.end())
+			{
+				ammoText[0]->setVisible(true);
+				ammoText[0]->setValue(item->getAmmoQuantity());
+			}
+		}
 		twoHandedText->setVisible(rule->isTwoHanded());
 		twoHandedText->setColor(rule->isBlockingBothHands() ? _twoHandedRed : _twoHandedGreen);
 		if (rule->getBattleType() == BT_MEDIKIT)

@@ -90,6 +90,9 @@ public:
 	/// Sets the item's ammo quantity.
 	void setAmmoQuantity(int qty);
 
+	/// Gets the raw script-defined tag values (for reading mod-specific tags like shield charge).
+	const ScriptValues<BattleItem> &getScriptValuesRaw() const { return _scriptValues; }
+
 	/// Gets the turn until explosion
 	int getFuseTimer() const;
 	/// Sets the turns until explosion.

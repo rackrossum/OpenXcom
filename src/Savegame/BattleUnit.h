@@ -111,6 +111,8 @@ private:
 	int _currentArmor[SIDE_MAX], _maxArmor[SIDE_MAX];
 	int _fatalWounds[BODYPART_MAX];
 	int _fire;
+	int _displayShieldHp = 0;
+	int _displayShieldCapacity = 0;
 	std::vector<BattleItem*> _inventory;
 	BattleItem* _specWeapon[SPEC_WEAPON_MAX];
 	AIModule *_currentAIState;
@@ -422,6 +424,14 @@ public:
 	void setFire(int fire);
 	/// Get fire.
 	int getFire() const;
+	/// Sets the shield charge value to display in the inventory screen.
+	void setDisplayShieldHp(int hp);
+	/// Gets the shield charge value to display in the inventory screen.
+	int getDisplayShieldHp() const;
+	/// Sets the shield max capacity to display in the inventory screen.
+	void setDisplayShieldCapacity(int capacity);
+	/// Gets the shield max capacity to display in the inventory screen.
+	int getDisplayShieldCapacity() const;
 
 	/// Get the list of items in the inventory.
 	std::vector<BattleItem*> *getInventory();
