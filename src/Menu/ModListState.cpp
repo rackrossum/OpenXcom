@@ -243,7 +243,7 @@ void ModListState::lstModsRefresh(size_t scrollLoc)
 void ModListState::lstModsHover(Action *)
 {
 	size_t selectedRow = _lstMods->getSelectedRow();
-	if ((unsigned int)-1 != selectedRow)
+	if ((unsigned int)-1 != selectedRow && selectedRow < _mods.size())
 	{
 		_txtTooltip->setText(makeTooltip(Options::getModInfos().at(_mods[selectedRow].first)));
 
