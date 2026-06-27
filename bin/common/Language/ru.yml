@@ -90,6 +90,7 @@ ru:
   STR_APPLY_INVENTORY_TEMPLATE: "Применить шаблон инвентаря"
   STR_CLEAR_INVENTORY: "Очистить инвентарь"
   STR_AUTO_EQUIP: "Автоэкипировка"
+  STR_PERSONAL_ACHIEVEMENTS: "ЛИЧНЫЕ ДОСТИЖЕНИЯ"
   STR_QUICK_SAVE: "Быстрое сохранение"
   STR_QUICK_LOAD: "Быстрая загрузка"
   STR_ADVANCED: "ДОПОЛНИТЕЛЬНО"
