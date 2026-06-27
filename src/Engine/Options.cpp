@@ -509,6 +509,7 @@ void createControlsOXCE()
 	_info.push_back(OptionInfo(OPTION_OXCE, "keyGeoGlobalProduction", &keyGeoGlobalProduction, SDLK_p, "STR_PRODUCTION_OVERVIEW", "STR_GEOSCAPE"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "keyGeoGlobalResearch", &keyGeoGlobalResearch, SDLK_c, "STR_RESEARCH_OVERVIEW", "STR_GEOSCAPE"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "keyGeoGlobalAlienContainment", &keyGeoGlobalAlienContainment, SDLK_j, "STR_PRISONER_OVERVIEW", "STR_GEOSCAPE"));
+	_info.push_back(OptionInfo(OPTION_OXCE, "keyGeoGlobalTransfers", &keyGeoGlobalTransfers, SDLK_UNKNOWN, "STR_TRANSFER_OVERVIEW", "STR_GEOSCAPE"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "keyGeoDailyPilotExperience", &keyGeoDailyPilotExperience, SDLK_e, "STR_DAILY_PILOT_EXPERIENCE", "STR_GEOSCAPE"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "keyGraphsZoomIn", &keyGraphsZoomIn, SDLK_KP_PLUS, "STR_GRAPHS_ZOOM_IN", "STR_GEOSCAPE"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "keyGraphsZoomOut", &keyGraphsZoomOut, SDLK_KP_MINUS, "STR_GRAPHS_ZOOM_OUT", "STR_GEOSCAPE"));

@@ -282,6 +282,7 @@ GeoscapeState::GeoscapeState() : _pause(false), _zoomInEffectDone(false), _zoomO
 	_btnIntercept->onKeyboardPress((ActionHandler)&GeoscapeState::btnGlobalProductionClick, Options::keyGeoGlobalProduction);
 	_btnIntercept->onKeyboardPress((ActionHandler)&GeoscapeState::btnGlobalResearchClick, Options::keyGeoGlobalResearch);
 	_btnIntercept->onKeyboardPress((ActionHandler)&GeoscapeState::btnGlobalAlienContainmentClick, Options::keyGeoGlobalAlienContainment);
+	_btnIntercept->onKeyboardPress((ActionHandler)&GeoscapeState::btnGlobalTransfersClick, Options::keyGeoGlobalTransfers);
 	_btnIntercept->onKeyboardPress((ActionHandler)&GeoscapeState::btnDogfightExperienceClick, Options::keyGeoDailyPilotExperience);
 	_btnIntercept->setGeoscapeButton(true);
 
