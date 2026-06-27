@@ -2975,6 +2975,40 @@ int BattleUnit::getFire() const
 }
 
 /**
+ * Sets the shield charge value to display in the inventory screen.
+ * Set by mod scripts via Tag.UNIT_ENERGY_SHIELD_HP mirroring.
+ */
+void BattleUnit::setDisplayShieldHp(int hp)
+{
+	_displayShieldHp = hp;
+}
+
+/**
+ * Gets the shield charge value to display in the inventory screen.
+ */
+int BattleUnit::getDisplayShieldHp() const
+{
+	return _displayShieldHp;
+}
+
+/**
+ * Sets the shield max capacity to display in the inventory screen.
+ * Set by mod scripts via Tag.ARMOR_ENERGY_SHIELD_CAPACITY mirroring.
+ */
+void BattleUnit::setDisplayShieldCapacity(int capacity)
+{
+	_displayShieldCapacity = capacity;
+}
+
+/**
+ * Gets the shield max capacity to display in the inventory screen.
+ */
+int BattleUnit::getDisplayShieldCapacity() const
+{
+	return _displayShieldCapacity;
+}
+
+/**
  * Get the pointer to the vector of inventory items.
  * @return pointer to vector.
  */
@@ -6808,6 +6842,10 @@ void BattleUnit::ScriptRegister(ScriptParserBase* parser)
 
 	bu.add<&BattleUnit::getTurnsSinceSpottedByFaction>("getTurnsSinceSpottedByFaction");
 	bu.add<&BattleUnit::setTurnsSinceSpottedByFaction>("setTurnsSinceSpottedByFaction");
+	bu.add<&BattleUnit::setDisplayShieldHp>("setDisplayShieldHp");
+	bu.add<&BattleUnit::getDisplayShieldHp>("getDisplayShieldHp");
+	bu.add<&BattleUnit::setDisplayShieldCapacity>("setDisplayShieldCapacity");
+	bu.add<&BattleUnit::getDisplayShieldCapacity>("getDisplayShieldCapacity");
 
 	bu.add<&BattleUnit::getTurnsLeftSpottedForSnipers>("getTurnsLeftSpottedForSnipers");
 	bu.add<&setBaseStatRangeArrayScript<&BattleUnit::_turnsLeftSpottedForSnipers, FACTION_HOSTILE, 0, 255>>("setTurnsLeftSpottedForSnipers");

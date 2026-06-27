@@ -346,7 +346,7 @@ InventoryState::InventoryState(bool tu, BattlescapeState *parent, Base *base, bo
 	_txtStatLine1->setVisible(Options::showMoreStatsInInventoryView && !_tu);
 	_txtStatLine2->setVisible(Options::showMoreStatsInInventoryView && !_tu);
 	_txtStatLine3->setVisible(Options::showMoreStatsInInventoryView && !_tu);
-	_txtStatLine4->setVisible(Options::showMoreStatsInInventoryView && !_tu);
+	_txtStatLine4->setVisible((Options::showMoreStatsInInventoryView && !_tu) || _battleGame->getSelectedUnit()->getDisplayShieldCapacity() > 0);
 }
 
 static void _clearInventoryTemplate(std::vector<EquipmentLayoutItem*> &inventoryTemplate)
@@ -719,6 +719,16 @@ void InventoryState::updateStats()
 						txtField->setText("");
 					}
 					break;
+						case 20:
+							if (unit->getDisplayShieldCapacity() > 0)
+							{
+								txtField->setText(tr("STR_SHIELD_SHORT").arg(unit->getDisplayShieldHp()).arg(unit->getDisplayShieldCapacity()));
+							}
+							else
+							{
+								txtField->setText("");
+							}
+							break;
 				default:
 					txtField->setText("");
 					break;
