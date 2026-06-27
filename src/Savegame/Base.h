@@ -264,6 +264,8 @@ public:
 	void removeProduction (Production * p);
 	/// Get the list of Base Production's
 	const std::vector<Production *> & getProductions() const;
+	/// Gets the base's production list (mutable, for reordering).
+	std::vector<Production *> & getProductions() { return _productions; }
 	/// Gets the base's used psi lab space.
 	int getUsedPsiLabs() const;
 	/// Gets the base's total available psi lab space.
