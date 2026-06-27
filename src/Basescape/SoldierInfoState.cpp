@@ -57,7 +57,7 @@ namespace OpenXcom
  * @param soldierId ID of the selected soldier.
  */
 SoldierInfoState::SoldierInfoState(Base *base, size_t soldierId, bool forceLimits, bool readOnly) :
-	_base(base), _soldierId(soldierId), _forceLimits(forceLimits), _readOnly(readOnly), _noTransformations(false), _soldier(0)
+	_base(base), _soldierId(soldierId), _forceLimits(forceLimits), _readOnly(readOnly), _noTransformations(false), _soldier(0), _barScaleMode(0)
 {
 	if (_base == 0)
 	{
@@ -278,6 +278,7 @@ SoldierInfoState::SoldierInfoState(Base *base, size_t soldierId, bool forceLimit
 
 	_btnArmor->setText(tr("STR_ARMOR"));
 	_btnArmor->onMouseClick((ActionHandler)&SoldierInfoState::btnArmorClick);
+	_btnArmor->onMouseClick((ActionHandler)&SoldierInfoState::btnBarScaleClick, SDL_BUTTON_RIGHT);
 	if (_readOnly)
 	{
 		_btnArmor->setVisible(false);
@@ -459,6 +460,8 @@ void SoldierInfoState::init()
 		bar->setValue(withArmor2);
 		bar->setValue2(std::min(withArmor2, initial2));
 	};
+
+	applyBarScale();
 
 	formatStat(current->tu, max.tu, withArmor.tu, initial->tu, _numTimeUnits, _barTimeUnits);
 	formatStat(current->stamina, max.stamina, withArmor.stamina, initial->stamina, _numStamina, _barStamina);
@@ -701,6 +704,46 @@ void SoldierInfoState::btnNextClick(Action *)
 	if (_soldierId >= _list->size())
 		_soldierId = 0;
 	init();
+}
+
+/**
+ * Cycles the stat bar scale between x160 (default), x800 and x2000,
+ * then re-applies it to every bar. Triggered by right-clicking the Armor button.
+ * @param action Pointer to an action.
+ */
+void SoldierInfoState::btnBarScaleClick(Action *)
+{
+	_barScaleMode = (_barScaleMode + 1) % 3;
+	applyBarScale();
+}
+
+/**
+ * Recomputes and applies the Bar::setScale() factor for every stat bar
+ * based on the currently selected scale mode. The bars themselves are
+ * 170px wide, so scale = 170 / maxValueForCurrentMode.
+ * Note: the "0/20/40.../160" axis numbers are part of the background
+ * graphic (BACK06.SCR) and are not redrawn by this function.
+ */
+void SoldierInfoState::applyBarScale()
+{
+	static const double maxValues[3] = { 160.0, 800.0, 2000.0 };
+	double scale = 170.0 / maxValues[_barScaleMode];
+
+	_barTimeUnits->setScale(scale);
+	_barStamina->setScale(scale);
+	_barHealth->setScale(scale);
+	_barBravery->setScale(scale);
+	_barReactions->setScale(scale);
+	_barFiring->setScale(scale);
+	_barThrowing->setScale(scale);
+	_barMelee->setScale(scale);
+	_barStrength->setScale(scale);
+	if (_game->getMod()->isManaFeatureEnabled())
+	{
+		_barMana->setScale(scale);
+	}
+	_barPsiStrength->setScale(scale);
+	_barPsiSkill->setScale(scale);
 }
 
 /**

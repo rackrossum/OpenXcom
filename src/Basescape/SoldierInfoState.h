@@ -57,6 +57,8 @@ private:
 	Text *_txtTimeUnits, *_txtStamina, *_txtHealth, *_txtBravery, *_txtReactions, *_txtFiring, *_txtThrowing, *_txtMelee, *_txtStrength, *_txtPsiStrength, *_txtPsiSkill, *_txtMana;
 	Text *_numTimeUnits, *_numStamina, *_numHealth, *_numBravery, *_numReactions, *_numFiring, *_numThrowing, *_numMelee, *_numStrength, *_numPsiStrength, *_numPsiSkill, *_numMana;
 	Bar *_barTimeUnits, *_barStamina, *_barHealth, *_barBravery, *_barReactions, *_barFiring, *_barThrowing, *_barMelee, *_barStrength, *_barPsiStrength, *_barPsiSkill, *_barMana;
+	/// Index into the bar scale cycle (0 = x160, 1 = x800, 2 = x2000).
+	int _barScaleMode;
 
 public:
 	/// Creates the Soldier Info state.
@@ -81,6 +83,10 @@ public:
 	void btnNextClick(Action *action);
 	/// Handler for clicking the Armor button.
 	void btnArmorClick(Action *action);
+	/// Handler for right-clicking the Armor button: cycles the stat bar scale.
+	void btnBarScaleClick(Action *action);
+	/// Applies the currently selected bar scale to every stat bar.
+	void applyBarScale();
 	/// Handler for clicking the Bonuses button.
 	void btnBonusesClick(Action *action);
 	/// Handler for clicking the Transformations button.
