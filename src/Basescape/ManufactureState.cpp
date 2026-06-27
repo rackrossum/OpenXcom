@@ -115,6 +115,10 @@ ManufactureState::ManufactureState(Base *base) : _base(base)
 	_txtTimeLeft->setText(tr("STR_DAYS_HOURS_LEFT"));
 	_txtTimeLeft->setWordWrap(true);
 
+	if (Options::oxceBaseManufactureReorder)
+	{
+		_lstManufacture->setArrowColumn(137, ARROW_VERTICAL);
+	}
 	_lstManufacture->setColumns(5, 114, 16, 52, 56, 48);
 	_lstManufacture->setAlign(ALIGN_RIGHT);
 	_lstManufacture->setAlign(ALIGN_LEFT, 0);
@@ -122,6 +126,11 @@ ManufactureState::ManufactureState(Base *base) : _base(base)
 	_lstManufacture->setBackground(_window);
 	_lstManufacture->setMargin(2);
 	_lstManufacture->setWordWrap(true);
+	if (Options::oxceBaseManufactureReorder)
+	{
+		_lstManufacture->onLeftArrowClick((ActionHandler)&ManufactureState::lstManufactureLeftArrowClick);
+		_lstManufacture->onRightArrowClick((ActionHandler)&ManufactureState::lstManufactureRightArrowClick);
+	}
 	_lstManufacture->onMouseClick((ActionHandler)&ManufactureState::lstManufactureClickLeft, SDL_BUTTON_LEFT);
 	_lstManufacture->onMouseClick((ActionHandler)&ManufactureState::lstManufactureClickMiddle, SDL_BUTTON_MIDDLE);
 	_lstManufacture->onMousePress((ActionHandler)&ManufactureState::lstManufactureMousePress);
@@ -234,8 +243,14 @@ void ManufactureState::fillProductionList(size_t scrl)
  * Opens the screen displaying production settings.
  * @param action Pointer to an action.
  */
-void ManufactureState::lstManufactureClickLeft(Action *)
+void ManufactureState::lstManufactureClickLeft(Action *action)
 {
+	double mx = action->getAbsoluteXMouse();
+	if (mx >= _lstManufacture->getArrowsLeftEdge() && mx < _lstManufacture->getArrowsRightEdge())
+	{
+		return;
+	}
+
 	const std::vector<Production*> productions(_base->getProductions());
 	_game->pushState(new ManufactureInfoState(_base, productions[_lstManufacture->getSelectedRow()]));
 }
@@ -244,8 +259,14 @@ void ManufactureState::lstManufactureClickLeft(Action *)
 * Opens the TechTreeViewer for the corresponding topic.
 * @param action Pointer to an action.
 */
-void ManufactureState::lstManufactureClickMiddle(Action *)
+void ManufactureState::lstManufactureClickMiddle(Action *action)
 {
+	double mx = action->getAbsoluteXMouse();
+	if (mx >= _lstManufacture->getArrowsLeftEdge() && mx < _lstManufacture->getArrowsRightEdge())
+	{
+		return;
+	}
+
 	const std::vector<Production*> productions(_base->getProductions());
 	const RuleManufacture *selectedTopic = productions[_lstManufacture->getSelectedRow()]->getRules();
 	if (_game->isCtrlPressed())
@@ -322,6 +343,107 @@ const RuleItem* ManufactureState::GetItemForTooltip()
 const Base* ManufactureState::GetBase()
 {
 	return _base;
+}
+
+/**
+ * Reorders a production topic up.
+ * @param action Pointer to an action.
+ */
+void ManufactureState::lstManufactureLeftArrowClick(Action* action)
+{
+	unsigned int row = _lstManufacture->getSelectedRow();
+	if (row > 0)
+	{
+		if (_game->isLeftClick(action, true))
+		{
+			moveTopicUp(action, row);
+		}
+		else if (_game->isRightClick(action, true))
+		{
+			moveTopicUp(action, row, true);
+		}
+	}
+}
+
+/**
+ * Moves a production topic up on the list.
+ * @param action Pointer to an action.
+ * @param row Selected production topic row.
+ * @param max Move the production topic to the top?
+ */
+void ManufactureState::moveTopicUp(Action* action, unsigned int row, bool max)
+{
+	auto& topics = _base->getProductions();
+	if (max)
+	{
+		auto* p = topics.at(row);
+		topics.erase(topics.begin() + row);
+		topics.insert(topics.begin(), p);
+	}
+	else
+	{
+		std::swap(topics[row], topics[row - 1]);
+		if (row != _lstManufacture->getScroll())
+		{
+			SDL_WarpMouse(action->getLeftBlackBand() + action->getXMouse(), action->getTopBlackBand() + action->getYMouse() - static_cast<Uint16>(8 * action->getYScale()));
+		}
+		else
+		{
+			_lstManufacture->scrollUp(false);
+		}
+	}
+	fillProductionList(_lstManufacture->getScroll());
+}
+
+/**
+ * Reorders a production topic down.
+ * @param action Pointer to an action.
+ */
+void ManufactureState::lstManufactureRightArrowClick(Action* action)
+{
+	unsigned int row = _lstManufacture->getSelectedRow();
+	size_t numTopics = _base->getProductions().size();
+	if (0 < numTopics && INT_MAX >= numTopics && row < numTopics - 1)
+	{
+		if (_game->isLeftClick(action, true))
+		{
+			moveTopicDown(action, row);
+		}
+		else if (_game->isRightClick(action, true))
+		{
+			moveTopicDown(action, row, true);
+		}
+	}
+}
+
+/**
+ * Moves a production topic down on the list.
+ * @param action Pointer to an action.
+ * @param row Selected production topic row.
+ * @param max Move the production topic to the bottom?
+ */
+void ManufactureState::moveTopicDown(Action* action, unsigned int row, bool max)
+{
+	auto& topics = _base->getProductions();
+	if (max)
+	{
+		auto* p = topics.at(row);
+		topics.erase(topics.begin() + row);
+		topics.insert(topics.end(), p);
+	}
+	else
+	{
+		std::swap(topics[row], topics[row + 1]);
+		if (row != _lstManufacture->getVisibleRows() - 1 + _lstManufacture->getScroll())
+		{
+			SDL_WarpMouse(action->getLeftBlackBand() + action->getXMouse(), action->getTopBlackBand() + action->getYMouse() + static_cast<Uint16>(8 * action->getYScale()));
+		}
+		else
+		{
+			_lstManufacture->scrollDown(false);
+		}
+	}
+	fillProductionList(_lstManufacture->getScroll());
 }
 
 }

@@ -162,6 +162,7 @@ OPT int oxceBaseInfoDefenseScaleMultiplier;
 OPT bool oxceBaseSoldierTransformationShowOnlyEligible;
 OPT bool oxceBaseFilterResearchable;
 OPT bool oxceBaseResearchReorder;
+OPT bool oxceBaseManufactureReorder;
 OPT bool oxceBaseManufactureFallbackButton;
 OPT bool oxceBaseManufactureInfinityButton;
 OPT bool oxceBaseTouchButtons;

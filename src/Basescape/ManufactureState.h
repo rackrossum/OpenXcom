@@ -62,6 +62,15 @@ public:
 	/// Fills the list of base productions.
 	void fillProductionList(size_t scrl);
 
+	/// Handler for clicking the reordering up button.
+	void lstManufactureLeftArrowClick(Action* action);
+	/// Moves a production topic up.
+	void moveTopicUp(Action* action, unsigned int row, bool max = false);
+	/// Handler for clicking the reordering down button.
+	void lstManufactureRightArrowClick(Action* action);
+	/// Moves a production topic down.
+	void moveTopicDown(Action* action, unsigned int row, bool max = false);
+
 protected:
 	const RuleItem* GetItemForTooltip() override;
 	const Base* GetBase() override;
