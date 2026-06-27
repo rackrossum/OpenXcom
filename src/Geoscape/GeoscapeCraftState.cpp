@@ -17,6 +17,8 @@
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include "GeoscapeCraftState.h"
+#include "../Engine/Action.h"
+#include "../Engine/Logger.h"
 #include <sstream>
 #include "../fmath.h"
 #include "../Engine/Game.h"
@@ -85,7 +87,7 @@ GeoscapeCraftState::GeoscapeCraftState(Craft *craft, Globe *globe, Waypoint *way
 
 	for (int i = 0; i < _weaponNum; ++i)
 	{
-		_txtWeaponName[i] = new Text(130, 9, 32, offset_upper + 92 + 8*i);
+		_txtWeaponName[i] = new Text(120, 9, 42, offset_upper + 92 + 8*i);
 		_txtWeaponAmmo[i] = new Text(80, 9, 164, offset_upper + 92 + 8*i);
 	}
 	_txtRedirect = new Text(230, 17, 13, offset_lower + 0);
@@ -235,6 +237,9 @@ GeoscapeCraftState::GeoscapeCraftState(Craft *craft, Globe *globe, Waypoint *way
 		if (w1 != 0)
 		{
 			_txtWeaponName[i]->setText(tr(wName).arg(tr(w1->getRules()->getType())));
+			_txtWeaponName[i]->setAlign(ALIGN_CENTER);
+			_txtWeaponName[i]->onMouseClick((ActionHandler)&GeoscapeCraftState::txtWeaponClick);
+			_txtWeaponName[i]->setColor(w1->isDisabled() ? 2 : 3);
 			if (w1->getRules()->getAmmoMax())
 				_txtWeaponAmmo[i]->setText(tr("STR_ROUNDS_").arg(w1->getAmmo()));
 			else
@@ -376,6 +381,28 @@ void GeoscapeCraftState::btnCancelClick(Action *)
 	}
 	// Cancel
 	_game->popState();
+}
+
+/**
+ * Toggles a craft weapon on/off (won't be used in the next dogfight if disabled).
+ * Recolors the weapon label: green = enabled, red = disabled.
+ * @param action Pointer to an action.
+ */
+void GeoscapeCraftState::txtWeaponClick(Action *action)
+{
+	for (int i = 0; i < _weaponNum; ++i)
+	{
+		if (action->getSender() == _txtWeaponName[i])
+		{
+			CraftWeapon *w = _craft->getWeapons()->at(i);
+			if (w)
+			{
+				w->setDisabled(!w->isDisabled());
+				_txtWeaponName[i]->setColor(w->isDisabled() ? 2 : 3);
+			}
+			return;
+		}
+	}
 }
 
 }
